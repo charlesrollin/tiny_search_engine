@@ -1,3 +1,13 @@
+from os.path import dirname, exists
+from os import makedirs
+
+
+def make_dirs(filepath):
+    basedir = dirname(filepath)
+    if not exists(basedir):
+        makedirs(basedir)
+
+
 def load_map(map_path, key_type=str, value_type=str):
     result = dict()
     with open(map_path) as map_file:

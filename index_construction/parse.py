@@ -1,5 +1,5 @@
 from threading import Thread
-from os import makedir
+from utils import make_dirs
 
 from printer import ParsePrinter
 
@@ -67,6 +67,7 @@ class AbstractBlockParser(Thread):
             for occurrence in block_index[term_id]:
                 result += "%s,%s|" % occurrence
             lines_to_write.append(result[:-1] + "\n")
+        make_dirs(file_path)
         with open(file_path, "w") as block_index_file:
             block_index_file.writelines(lines_to_write)
 

@@ -3,6 +3,9 @@
 /cs276-data/
 cacm.all
 
+# Built indexes
+/indexes/
+
 # Idea folders
 /.idea/
 
