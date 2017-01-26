@@ -49,8 +49,88 @@ Is this engine truly scalable? If not, what could be improved?
 
 ## Performances
 
-Describe here:
+In this section we will discuss:
 * Index construction speed & memory performances
 * Index size
 * Requests speed & IO performances
-* Engine performance on test set
+* Engine evaluation on test set
+
+### Index Construction
+
+The duration of each step of the index construction is displayed below for both test collections:
+
+|     | CACM | CS276 |
+| :--- | :–––-: | :-----: |
+| Parse (s) | 0.6 | 58 |
+| Merge (s) | 0.5 | 70 |
+| Refine (s) | 0.7 | 87 |
+| **Total (s)** | 1.8 | 215 |
+
+As we can see, the most expensive step is the refinement of the index: computing weights involves costly mathematical 
+operations whereas parsing and merging involves simple read and copy operations.
+
+### Index size
+
+The index is currently stored as string (hence not the most effective storage method).
+```bash
+term_id:doc_id, freq, weight|doc_id, freq, weight| ... |doc_id, freq, weight
+```
+|     | CACM | CS276 |
+| :--- | :–––-: | :-----: |
+| Collection size (MB) | 13.1 | 430.7 |
+| Index size (MB) | 2.2 | 315.5 |
+| ID Mappers (MB) | 0.3 | 13.7 |
+| Positions (MB) | 0.2 | 6.5 |
+| **Total (MB)** | 2.7 | 335.7 |
+| **Ratio (%)** | 20.6 | 77.9 |
+
+From the above table, we can see that this storage method is not viable for real-life search engines.
+
+Indeed, one would implement a compression method to decrease the size of the index.
+
+### Requests performance
+
+To improve the time performance of the requests, this search engine heavily relies on the `position` dictionary.
+It maps each term ID to a position in the index and allows a O(1)-ish retrieval of a posting list.
+
+Hence at a new request:
+* the position of each unique term is retrieved
+* and the index file is opened once
+
+### Engine evaluation on requests set
+
+The test set was composed of:
+* 64 raw queries (including non-alphanumerical characters and common words)
+* the list of relevant documents for each query
+
+A few tests revealed that some queries explicitly referred to authors of articles. As a consequence, the author tag in 
+the CACM collection was included in the scope of this engine.
+
+#### Measures
+
+To choose the best weighting function, two measures were defined:
+* Precision / Recall curves for it is very visual
+* Mean Average Precision to easily sort the results
+
+#### Weight functions
+
+Nine weight functions were tested:
+1. Basic tf-idf
+2. Normalized tf-idf
+3. Normalized frequency
+4. Pivoted document length normalization
+5. BM25 (Okapi)
+6. Modified BM25
+7. Evolutionary learned scheme
+8. Divergence from randomness
+9. Axiomatic scheme
+
+Except for the first 3, all these functions were taken from http://ir.dcs.gla.ac.uk/~ronanc/papers/cumminsChapter.pdf
+
+#### Results
+
+This plot sums up the results of the engine evaluation:
+
+![Results](./results_riw.png)
+
+One function behaves better than the others: the Evolutionary Learned Scheme.

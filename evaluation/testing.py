@@ -71,7 +71,7 @@ class TestBuilder(object):
         for i in range(len(WeightFactory.weightClasses)):
             self.printer.print_test_progress(i+1, len(WeightFactory.weightClasses))
             curve = self._weight_test(collection_path, i)
-            plt.plot(*zip(*curve.points), marker="x", label="#%i (MAP=%.3f)" % (i, curve.get_mean_average_precision()))
+            plt.plot(*zip(*curve.points), marker="x", label="#%i (MAP: %.3f)" % (i+1, curve.get_mean_average_precision()))
         plt.legend(loc='upper right', shadow=True, fontsize='x-large')
         plt.xlabel("Recall")
         plt.xlim((0, 1))
