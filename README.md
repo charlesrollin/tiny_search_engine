@@ -59,15 +59,14 @@ In this section we will discuss:
 
 The duration of each step of the index construction is displayed below for both test collections:
 
-|     | CACM | CS276 |
-| :--- | :–––-: | :-----: |
-| Parse (s) | 0.6 | 58 |
-| Merge (s) | 0.5 | 70 |
-| Refine (s) | 0.7 | 87 |
-| **Total (s)** | 1.8 | 215 |
+| Steps | CACM  | CS276 |
+| --- | --- | --- |
+| Parse (s)   | 0.6  | 58   |
+| Merge (s)   | 0.5  | 70   |
+| Refine (s)   | 0.7  | 87   |
+| **Total (s)** | 1.8  | 215  |
 
-As we can see, the most expensive step is the refinement of the index: computing weights involves costly mathematical 
-operations whereas parsing and merging involves simple read and copy operations.
+As we can see, the most expensive step is the refinement of the index: computing weights involves costly mathematical operations whereas parsing and merging involves simple read and copy operations.
 
 ### Index size
 
@@ -75,8 +74,8 @@ The index is currently stored as string (hence not the most effective storage me
 ```bash
 term_id:doc_id, freq, weight|doc_id, freq, weight| ... |doc_id, freq, weight
 ```
-|     | CACM | CS276 |
-| :--- | :–––-: | :-----: |
+| Items | CACM | CS276 |
+| --- | --- | --- |
 | Collection size (MB) | 13.1 | 430.7 |
 | Index size (MB) | 2.2 | 315.5 |
 | ID Mappers (MB) | 0.3 | 13.7 |
@@ -103,8 +102,7 @@ The test set was composed of:
 * 64 raw queries (including non-alphanumerical characters and common words)
 * the list of relevant documents for each query
 
-A few tests revealed that some queries explicitly referred to authors of articles. As a consequence, the author tag in 
-the CACM collection was included in the scope of this engine.
+A few tests revealed that some queries explicitly referred to authors of articles. As a consequence, the author tag in the CACM collection was included in the scope of this engine.
 
 #### Measures
 
@@ -115,6 +113,7 @@ To choose the best weighting function, two measures were defined:
 #### Weight functions
 
 Nine weight functions were tested:
+
 1. Basic tf-idf
 2. Normalized tf-idf
 3. Normalized frequency
