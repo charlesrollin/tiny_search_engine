@@ -10,11 +10,11 @@ class ConsolePrinter(object):
 
 class ParsePrinter(ConsolePrinter):
 
-    def print_block_parse_start_message(self, block_path):
-        self._validate_print("Parsing block %s" % block_path)
+    def print_block_parse_start_message(self, nb_blocks):
+        self._validate_print("Starting parse of %i blocks" % nb_blocks)
 
-    def print_block_parse_end_message(self, block_path):
-        self._validate_print("Block %s successfully parsed" % block_path)
+    def print_block_parse_end_message(self, blocks_left):
+        self._validate_print("\tIn progress:  %i blocks parsed" % blocks_left)
 
 
 class MergePrinter(ConsolePrinter):

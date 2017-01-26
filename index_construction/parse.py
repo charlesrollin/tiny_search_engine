@@ -1,4 +1,4 @@
-from threading import Thread
+from threading import Thread, Lock
 from utils import make_dirs
 
 from printer import ParsePrinter
@@ -9,16 +9,25 @@ class AbstractParseManager(object):
     def __init__(self, verbose):
         self._cleaner = Cleaner()
         self.printer = ParsePrinter(verbose)
+        self.lock = Lock()
+        self._ended_threads = 0
 
     def parse(self, collection):
         """Start BlockParser workers on each block of the collection."""
-        raise NotImplementedError
+        self.printer.print_block_parse_start_message(len(collection.blocks))
+
+    def signal_job_done(self):
+        with self.lock:
+            self._ended_threads += 1
+            self.printer.print_block_parse_end_message(self._ended_threads)
+
 
 
 class DefaultParseManager(AbstractParseManager):
 
     def parse(self, collection):
-        block_parsers = [DefaultBlockParser(block, collection.id_storer, self._cleaner, self.printer)
+        AbstractParseManager.parse(self, collection)
+        block_parsers = [DefaultBlockParser(self, block, collection.id_storer, self._cleaner, self.printer)
                          for block in collection.blocks]
         for parser in block_parsers:
             parser.start()
@@ -28,12 +37,13 @@ class DefaultParseManager(AbstractParseManager):
 
 class AbstractBlockParser(Thread):
 
-    def __init__(self, block, id_storer, cleaner, printer):
+    def __init__(self, manager, block, id_storer, cleaner, printer):
         Thread.__init__(self)
         self._cleaner = cleaner
         self.printer = printer
         self.block = block
         self.id_storer = id_storer
+        self.manager = manager
 
     def _process_line(self, line):
         raise NotImplementedError
@@ -41,7 +51,6 @@ class AbstractBlockParser(Thread):
     def run(self):
         block = self.block
         id_storer = self.id_storer
-        self.printer.print_block_parse_start_message(block.block_path)
         tokens_amount = 0
         reversed_index = dict()
         for doc_id in block.documents:
@@ -58,7 +67,7 @@ class AbstractBlockParser(Thread):
                 occurrence_list.append((doc_id, doc_frequency_dict[word]))
                 reversed_index[term_id] = occurrence_list
         self._write_block_index("indexes/" + block.block_path, reversed_index)
-        self.printer.print_block_parse_end_message(block.block_path)
+        self.manager.signal_job_done()
 
     def _write_block_index(self, file_path, block_index):
         lines_to_write = list()
