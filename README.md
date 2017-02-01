@@ -37,7 +37,17 @@ Describe global architecture here & pertinent details.
 
 ### Global architecture
 
-*Insert nice class diagrams*
+#### Index Construction
+
+![Results](./img/index_construction.png)
+
+#### Querying
+
+![Results](./img/queries.png)
+
+#### Evaluation
+
+![Results](./img/evaluation.png)
 
 ### Zoom In
 
@@ -130,6 +140,6 @@ Except for the first 3, all these functions were taken from http://ir.dcs.gla.ac
 
 This plot sums up the results of the engine evaluation:
 
-![Results](./results_riw.png)
+![Results](./img/results_riw.png)
 
 One function behaves better than the others: the Evolutionary Learned Scheme.
