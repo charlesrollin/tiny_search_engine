@@ -39,13 +39,38 @@ Describe global architecture here & pertinent details.
 
 #### Index Construction
 
+Constructing the inverted index requires 3 steps:
+* Parse: build a simple inverted index for each "block" of the collection
+* Merge: merge the block indexes and collect statistics on collection
+* Refine: use the statistics to refine the index with weights
+
+Below is the class diagram for the Index Construction Module:
+
 ![Results](./img/index_construction.png)
+
+The Parse step is multi-threaded(-ish because of [Python GLI](https://en.wikipedia.org/wiki/Global_interpreter_lock)).
+The Merge step outputs various statistics on the collection used (e.g. average length of documents, etc.) to compute adv  anced weigthing functions.
 
 #### Querying
 
+Two types of queries are supported:
+
++ Boolean queries of the form: `(foo || bar) && !(foobar)`
++ Vector queries of the form: `foo bar foobar`
+
 ![Results](./img/queries.png)
 
+The inverted index is accessed through the Collection Index Reader. The Reader maintains a map of the position of each term in the index file, which insures a O(1) access to posting lists.
+
 #### Evaluation
+
+The evaluation process runs 64 queries on each of the 9 weight methods selected:
+
++ the Test Builder manages the whole process by creating an Evaluation Builder for each weight methods.
++ each Evaluation Builder then computes an 11-points interpolated mean curve.
++ eventually, the Test Builder plots the results
+
+Below is the class diagram for the Evaluation Module:
 
 ![Results](./img/evaluation.png)
 
