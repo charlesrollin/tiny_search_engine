@@ -49,7 +49,7 @@ Below is the class diagram for the Index Construction Module:
 ![Results](./img/index_construction.png)
 
 The Parse step is multi-threaded(-ish because of [Python GLI](https://en.wikipedia.org/wiki/Global_interpreter_lock)).
-The Merge step outputs various statistics on the collection used (e.g. average length of documents, etc.) to compute adv  anced weigthing functions.
+The Merge step outputs various statistics on the collection used (e.g. average length of documents, etc.) to compute advanced weigthing functions.
 
 #### Querying
 
@@ -60,7 +60,7 @@ Two types of queries are supported:
 
 ![Results](./img/queries.png)
 
-The inverted index is accessed through the Collection Index Reader. The Reader maintains a map of the position of each term in the index file, which insures a O(1) access to posting lists.
+The inverted index file is accessed through the Collection Index Reader. The Reader maintains a map of the position of each term in the index file, which insures a O(1) access to posting lists.
 
 #### Evaluation
 
@@ -129,7 +129,7 @@ It maps each term ID to a position in the index and allows a O(1)-ish retrieval 
 
 Hence at a new request:
 * the position of each unique term is retrieved
-* and the index file is opened once
+* the index file is only opened once
 
 ### Engine evaluation on requests set
 
