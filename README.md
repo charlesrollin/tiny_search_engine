@@ -80,7 +80,10 @@ Detail specific technical choices and their reasons.
 
 ### Limitations
 
-Is this engine truly scalable? If not, what could be improved?
+While this engine works fine with the CACM and CS276 collections, it is not truly scalable for two major reasons:
+
+* even though it drastically improves performances, storing a term-position map (i.e. a dense index) in memory is not sustainable as soon as we reach the billion terms. To solve this, one would use a non-dense index instead, that would point to a range of terms. Hence no out of memory error, but the performance on queries would decrease.
+* during the Refine step of index construction, the entire index is loaded in memory...
 
 ## Performances
 
