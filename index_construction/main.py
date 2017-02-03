@@ -19,9 +19,9 @@ def build_index(collection, weight_function_id, verbose):
     b.merge()
     merging_end = time.time()
     r = Refiner(collection, weighter, verbose)
-    r.refine_index()
+    positions = r.refine_index()
     refining_end = time.time()
     tot = refining_end - start
     print("Index built in %.2f sec:\n\tParse: %.2f sec\n\tMerge: %.2f sec\n\tRefine: %.2f sec"
           % (tot, parsing_end - start, merging_end - parsing_end, refining_end - merging_end))
-    return r.positions
+    return positions
