@@ -42,7 +42,7 @@ def file_lines_to_term_indexes(lines):
 
 def file_line_to_term_index(line, refined=False):
     temp = line[:-1].split(':')
-    term_id = temp[0]
+    term_id = int(temp[0])
     str_occurrences = temp[1].split('|')
     occurrences = list()
     for str_occurrence in str_occurrences:
