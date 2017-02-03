@@ -39,6 +39,7 @@ class AbstractBlockParser(Thread):
 
     def __init__(self, manager, block, id_storer, cleaner, printer):
         Thread.__init__(self)
+        self.daemon = True
         self._cleaner = cleaner
         self.printer = printer
         self.block = block
