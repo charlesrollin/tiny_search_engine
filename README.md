@@ -94,6 +94,7 @@ In order to handle a request, this engine needs two maps:
 In addition, a third map improves performances when reading a posting list from the index file.
 
 These maps are a dense index on a set of IDs. If we were to reach the million terms in a collection, such maps would not fit in memory anymore. One would instead turn them into non-dense indexes pointing at a range of IDs (either stored  in a local file or on another machine).
+
 Such a solution  makes the whole system scalable but has an impact on performances. Hence the use of dense indexes in this engine.
 
 #### IO Buffers
@@ -103,7 +104,7 @@ The default limitation is set to 2200 lines (empirically chosen), which means we
 
 However, posting lists do not have an homogeneous size (long-tail phenomenon) and their size directly depends on the size of the collection! Hence the simplicity of the current queues does not allow a "true" scalability.
 
-To fix this, one would check the size of each posting list before loading it in memory and expressed the capacity of the queues as an amount of bytes. This approach would work until even one posting list is too big to fit in memory.
+To fix this, one would check the size of each posting list before loading it in memory and would express the capacity of the queues as an amount of bytes. This approach will work until posting lists are too big to fit in memory individually.
 
 ## Performances
 
