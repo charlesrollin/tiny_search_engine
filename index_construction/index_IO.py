@@ -55,7 +55,7 @@ class SequentialIndexWriter(object):
         except OSError:
             pass
 
-    def _flush(self):  # TODO: store positions if refining
+    def _flush(self):
         with open(self.file_path, 'a') as index_file:
             for term_index in self._write_buffer:
                 if self._refined:
@@ -67,3 +67,6 @@ class SequentialIndexWriter(object):
         self._write_buffer.append(term_index)
         if len(self._write_buffer) >= self.capacity:
             self._flush()
+
+    def close(self):
+        self._flush()

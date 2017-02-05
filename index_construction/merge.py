@@ -27,6 +27,12 @@ class BlockIndexMerger(object):
                 reader_id = i
         return None if reader_id < 0 else self._readers[reader_id].pop()
 
+    def _end(self):
+        for reader in self._readers:
+            remove(reader.file_path)
+        self.stats.signal_end_of_merge()
+        self._writer.close()
+
     def merge(self):
         self.printer.print_merge_start_message()
         counter = 0
@@ -43,6 +49,4 @@ class BlockIndexMerger(object):
                 if counter % 25000 == 0:
                     self.printer.print_merge_progress_message(counter)
         self.printer.print_end_of_merge_message(counter)
-        for reader in self._readers:
-            remove(reader.file_path)
-        self.stats.signal_end_of_merge()
+        self._end()

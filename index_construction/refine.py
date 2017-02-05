@@ -3,7 +3,6 @@ from utils import save_map
 from printer import RefinePrinter
 
 
-# TODO: share IndexWriter class to avoid loading the entire index in memory!
 class Refiner(object):
 
     def __init__(self, collection, weighter, verbose, capacity):
@@ -29,6 +28,7 @@ class Refiner(object):
         # TODO: don't forget about Nds (that are set to 1 for the moment)
         save_map(writer.positions, "indexes/" + self._collection.collection_path + "/positions")
         self.printer.print_end_of_refine_message()
+        writer.close()
         return writer.positions
 
     def refine_line(self, index_line):
