@@ -11,14 +11,14 @@ from queries.boolean_queries import BooleanQueryParser
 from queries.vector_queries import VectorQueryParser
 
 
-def run(collection_name, force_new_index, weight_function_id, start_evaluation):
+def run(collection_name, force_new_index, weight_function_id, start_evaluation, memory):
     collection_path = collection_name + "-data"
     if start_evaluation:
         run_test(collection_path, "queries/query.text", "queries/qrels.text")
     else:
         c = Collection(collection_path, verbose=True)
         if force_new_index:
-            positions = build_index(c, weight_function_id, verbose=True)
+            positions = build_index(c, weight_function_id, verbose=True, memory=memory)
         else:
             c.id_storer.term_map = load_map("indexes/" + c.collection_path + "/termmap", value_type=int)
             positions = load_map("indexes/" + c.collection_path + "/positions", key_type=int, value_type=int)
@@ -34,6 +34,7 @@ if __name__ == '__main__':
     arg_parser.add_argument('-w', '--weight', default=0, type=int, help=textwrap.dedent(help_str))
     arg_parser.add_argument('-r', '--refresh', help="add this flag to force refresh of index", action="store_true")
     arg_parser.add_argument('-e', '--evaluate', help="add this flag to launch engine evaluation", action="store_true")
+    arg_parser.add_argument('-m', '--memory', default=220, type=int, help="set memory limitations")
     args = arg_parser.parse_args()
     if args.collection not in ['cs276', 'cacm']:
         print("\tThe %s collection is not supported yet..." % args.collection)
@@ -44,4 +45,4 @@ if __name__ == '__main__':
     if args.evaluate and args.collection == 'cs276':
         print("\tEngine evaluation is only supported for the cacm collection...")
         exit(2)
-    run(args.collection, args.refresh, args.weight, args.evaluate)
+    run(args.collection, args.refresh, args.weight, args.evaluate, args.memory)
