@@ -5,7 +5,14 @@ Information Retrieval project for class IS3013AA
 ### Table of Contents
 + **[Usage Instructions](#usage-instructions)**  
 + **[Architecture](#architecture)**  
+    + **[Global Architecture](#global-architecture)**
+    + **[Zoom in](#zoom-in)**
+    + **[Limitations](#limitations)**
 + **[Performances](#performances)**
+    + **[Index Construction](#index-construction)**
+    + **[Index Size](#index-size)**
+    + **[Requests Performance](#requests-performance)**
+    + **[Engine Evaluation](#engine-evaluation)**
 
 ## Usage Instructions
 
@@ -51,7 +58,7 @@ Below is the class diagram for the Index Construction Module:
 ![Results](./img/index_construction.png)
 
 The Parse step is multi-threaded(-ish because of [Python GLI](https://en.wikipedia.org/wiki/Global_interpreter_lock)).
-The Merge step outputs various statistics on the collection used (e.g. average length of documents, etc.) to compute advanced weigthing functions.
+The Merge step outputs various statistics on the collection (e.g. average length of documents, etc.) used to compute advanced weigthing functions.
 
 #### Querying
 
@@ -93,7 +100,7 @@ In order to handle a request, this engine needs two maps:
 
 In addition, a third map improves performances when reading a posting list from the index file.
 
-These maps are a dense index on a set of IDs. If we were to reach the million terms in a collection, such maps would not fit in memory anymore. One would instead turn them into non-dense indexes pointing at a range of IDs (either stored  in a local file or on another machine).
+These maps are a dense index on a set of IDs. If we were to reach the billion terms in a collection, such maps would not fit in memory anymore. One would instead turn them into non-dense indexes pointing at a range of IDs (either stored  in a local file or on another machine).
 
 Such a solution  makes the whole system scalable but has an impact on performances. Hence the use of dense indexes in this engine.
 
