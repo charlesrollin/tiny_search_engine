@@ -29,6 +29,8 @@ optional arguments:
                         8: AxiomaticScheme
   -r, --refresh         add this flag to force refresh of index
   -e, --evaluate        add this flag to launch engine evaluation
+  -m MEMORY, --memory MEMORY
+                        set memory limitations
 ```
 
 ## Architecture
@@ -82,8 +84,26 @@ Detail specific technical choices and their reasons.
 
 While this engine works fine with the CACM and CS276 collections, it is not truly scalable for two major reasons:
 
-* even though it drastically improves performances, storing a term-position map (i.e. a dense index) in memory is not sustainable as soon as we reach the billion terms. To solve this, one would use a non-dense index instead, that would point to a range of terms. Hence no out of memory error, but the performance on queries would decrease.
-* during the Refine step of index construction, the entire index is loaded in memory...
+#### In-memory maps
+
+In order to handle a request, this engine needs two maps:
+
+* `terms = {term: term_id}` maps a term with its id
+* `docs = {doc_id: doc_path}` maps a doc id with the document it represents
+
+In addition, a third map improves performances when reading a posting list from the index file.
+
+These maps are a dense index on a set of IDs. If we were to reach the million terms in a collection, such maps would not fit in memory anymore. One would instead turn them into non-dense indexes pointing at a range of IDs (either stored  in a local file or on another machine).
+Such a solution  makes the whole system scalable but has an impact on performances. Hence the use of dense indexes in this engine.
+
+#### IO Buffers
+
+This engine uses simple read/write queues. To represent the memory limitations of the system, these queues have a limited capacty, expressed as an amount of lines.
+The default limitation is set to 2200 lines (empirically chosen), which means we assume no more than 2200 posting lists can fit in-memory.
+
+However, posting lists do not have an homogeneous size (long-tail phenomenon) and their size directly depends on the size of the collection! Hence the simplicity of the current queues does not allow a "true" scalability.
+
+To fix this, one would check the size of each posting list before loading it in memory and expressed the capacity of the queues as an amount of bytes. This approach would work until even one posting list is too big to fit in memory.
 
 ## Performances
 
@@ -99,10 +119,10 @@ The duration of each step of the index construction is displayed below for both 
 
 | Steps | CACM  | CS276 |
 | --- | --- | --- |
-| Parse (s)   | 0.6  | 58   |
-| Merge (s)   | 0.5  | 70   |
-| Refine (s)   | 0.7  | 87   |
-| **Total (s)** | 1.8  | 215  |
+| Parse (s)   | 0.5  | 57   |
+| Merge (s)   | 0.4  | 60   |
+| Refine (s)   | 0.9  | 90   |
+| **Total (s)** | 1.8  | 207  |
 
 As we can see, the most expensive step is the refinement of the index: computing weights involves costly mathematical operations whereas parsing and merging involves simple read and copy operations.
 
@@ -123,11 +143,11 @@ term_id:doc_id, freq, weight|doc_id, freq, weight| ... |doc_id, freq, weight
 
 From the above table, we can see that this storage method is not viable for real-life search engines.
 
-Indeed, one would implement a compression method to decrease the size of the index.
+As a solution, one would implement a compression method to decrease the size of the index.
 
 ### Requests performance
 
-To improve the time performance of the requests, this search engine heavily relies on the `position` dictionary.
+To improve the time performance of the requests, this search engine heavily relies on a `position` dictionary.
 It maps each term ID to a position in the index and allows a O(1)-ish retrieval of a posting list.
 
 Hence at a new request:
@@ -170,4 +190,4 @@ This plot sums up the results of the engine evaluation:
 
 ![Results](./img/results_riw.png)
 
-One function behaves better than the others: the Evolutionary Learned Scheme.
+One function behaves better than the others: the Evolutionary Learned Scheme (#7).
