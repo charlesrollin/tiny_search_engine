@@ -22,7 +22,6 @@ class AbstractParseManager(object):
             self.printer.print_block_parse_end_message(self._ended_threads)
 
 
-
 class DefaultParseManager(AbstractParseManager):
 
     def parse(self, collection):

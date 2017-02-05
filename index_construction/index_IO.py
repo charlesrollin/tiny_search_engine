@@ -58,7 +58,8 @@ class SequentialIndexWriter(object):
     def _flush(self):  # TODO: store positions if refining
         with open(self.file_path, 'a') as index_file:
             for term_index in self._write_buffer:
-                self.positions[term_index[0]] = index_file.tell()
+                if self._refined:
+                    self.positions[term_index[0]] = index_file.tell()
                 index_file.write(term_index_to_file_line(term_index))
         self._write_buffer = list()
 

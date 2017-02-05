@@ -1,24 +1,23 @@
 from index_construction.index_IO import SequentialIndexReader, SequentialIndexWriter
-from utils import file_line_to_term_index, term_index_to_file_line, save_map
+from utils import save_map
 from printer import RefinePrinter
 
 
 # TODO: share IndexWriter class to avoid loading the entire index in memory!
 class Refiner(object):
 
-    def __init__(self, collection, weighter, verbose):
-        # type: (Collection, Weighter, bool) -> None
+    def __init__(self, collection, weighter, verbose, capacity):
         self._collection = collection
         self.n_d = dict()
+        self.capacity = capacity
         self.positions = dict()
         self.weighter = weighter
         self.printer = RefinePrinter(verbose)
 
     def refine_index(self):
-        capacity = 100
-        reader = SequentialIndexReader("indexes/%s.index" % self._collection.collection_path, capacity)
+        reader = SequentialIndexReader("indexes/%s.index" % self._collection.collection_path, self.capacity / 2)
         writer = SequentialIndexWriter("indexes/%s.refined.index" % self._collection.collection_path,
-                                       capacity, refined=True)
+                                       self.capacity / 2, refined=True)
         self.printer.print_refine_start_message()
         counter = 0
         while reader.peek() is not None:

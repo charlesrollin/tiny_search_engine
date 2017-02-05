@@ -6,8 +6,7 @@ from index_construction.refine import Refiner
 from index_construction.weights import WeightFactory
 
 
-def build_index(collection, weight_function_id, verbose):
-    # type: (Collection) -> dict
+def build_index(collection, weight_function_id, verbose, memory=220):
     p = DefaultParseManager(verbose)
     start = time.time()
     p.parse(collection)
@@ -15,10 +14,10 @@ def build_index(collection, weight_function_id, verbose):
     del p
     collection.store_maps()
     weighter = WeightFactory.get_weight_function(weight_function_id, len(collection))
-    b = BlockIndexMerger(collection, weighter.stats, 220, verbose)
+    b = BlockIndexMerger(collection, weighter.stats, memory, verbose)
     b.merge()
     merging_end = time.time()
-    r = Refiner(collection, weighter, verbose)
+    r = Refiner(collection, weighter, verbose, memory)
     positions = r.refine_index()
     refining_end = time.time()
     tot = refining_end - start
