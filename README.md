@@ -40,6 +40,17 @@ optional arguments:
                         set memory limitations
 ```
 
+<dl>
+    <dt>Build index and start engine</dt>
+    <dd><code>python3 main.py {cacm or cs276} -w {0 .. 8} -r</code></dd>
+    <dt>Start engine with last index</dt>
+    <dd><code>python3 main.py {cacm or cs276}</code> (raises an error if there is no last index)</dd>
+    <dt>Start engine evaluation</dt>
+    <dd><code>python3 main.py cacm -e</code> (evaluation only supported for cacm)</dd>
+</dl>
+
+***
+
 ## Architecture
 
 Describe global architecture here & pertinent details.
@@ -112,6 +123,8 @@ The default limitation is set to 2200 lines (empirically chosen), which means we
 However, posting lists do not have an homogeneous size (long-tail phenomenon) and their size directly depends on the size of the collection! Hence the simplicity of the current queues does not allow a "true" scalability.
 
 To fix this, one would check the size of each posting list before loading it in memory and would express the capacity of the queues as an amount of bytes. This approach will work until posting lists are too big to fit in memory individually.
+
+***
 
 ## Performances
 
