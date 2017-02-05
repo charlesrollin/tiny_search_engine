@@ -6,7 +6,7 @@ from index_construction.refine import Refiner
 from index_construction.weights import WeightFactory
 
 
-def build_index(collection, weight_function_id, verbose, memory=220):
+def build_index(collection, weight_function_id, verbose, memory=1100):
     p = DefaultParseManager(verbose)
     start = time.time()
     p.parse(collection)
