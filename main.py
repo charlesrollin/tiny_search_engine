@@ -22,7 +22,7 @@ def run(collection_name, force_new_index, weight_function_id, start_evaluation, 
         else:
             c.id_storer.term_map = load_map("indexes/" + c.collection_path + "/termmap", value_type=int)
             positions = load_map("indexes/" + c.collection_path + "/positions", key_type=int, value_type=int)
-        runner = VectorQueryParser(c, "indexes/%s.refined.index" % c.collection_path, positions, verbose=True)
+        runner = VectorQueryParser(c, "indexes/%s.index" % c.collection_path, positions, verbose=True)
         while True:
                 runner.execute_query(input("Enter your query: "))
 

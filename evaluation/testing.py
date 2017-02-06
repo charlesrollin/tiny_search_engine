@@ -83,7 +83,7 @@ class TestBuilder(object):
         # type: (str, int) -> MeanCurve
         c = Collection(collection_path, verbose=False)
         positions = build_index(c, weight_function_id, verbose=False)
-        runner = VectorQueryParser(c, "indexes/%s.refined.index" % c.collection_path, positions, verbose=False)
+        runner = VectorQueryParser(c, "indexes/%s.index" % c.collection_path, positions, verbose=False)
         eb = EvaluationBuilder()
         query_counter = 0
         for sup_query in self.queries:

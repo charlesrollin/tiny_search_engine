@@ -8,10 +8,11 @@ from porterstemmer import Stemmer
 
 class AbstractParseManager(object):
 
-    def __init__(self, verbose):
+    def __init__(self, stats, verbose):
         self._cleaner = Cleaner()
         self.printer = ParsePrinter(verbose)
         self.lock = Lock()
+        self.stats = stats
         self._ended_threads = 0
 
     def parse(self, collection):
@@ -34,6 +35,7 @@ class DefaultParseManager(AbstractParseManager):
             parser.start()
         for parser in block_parsers:
             parser.join()
+        self.stats.signal_end_of_merge()
 
 
 class AbstractBlockParser(Thread):
@@ -70,6 +72,8 @@ class AbstractBlockParser(Thread):
                 occurrence_list = reversed_index.get(term_id, list())
                 occurrence_list.append((doc_id, doc_frequency_dict[word]))
                 reversed_index[term_id] = occurrence_list
+        for posting_list in reversed_index.values():
+            self.manager.stats.process_posting_list(posting_list)
         self._write_block_index("indexes/" + block.block_path, reversed_index)
         self.manager.signal_job_done()
 

@@ -1,6 +1,7 @@
 from math import log10, sqrt
 
 # All the weights described here are taken from http://ir.dcs.gla.ac.uk/~ronanc/papers/cumminsChapter.pdf
+from threading import Lock
 
 
 class WeightFactory(object):
@@ -168,16 +169,18 @@ class CollectionStats(object):
         self.docs_stats = dict()
         self.average_doc_length = 0
         self.collection_size = collection_size
+        self.lock = Lock()
 
     def process_posting_list(self, posting_list):
         """Update the statistics with a new posting list."""
-        for doc_id, freq in posting_list:
-            length, max_freq = self.docs_stats.get(doc_id, (0, 0))
-            length += freq
-            self.average_doc_length += freq
-            if freq > max_freq:
-                max_freq = freq
-            self.docs_stats[doc_id] = length, max_freq
+        with self.lock:
+            for doc_id, freq in posting_list:
+                length, max_freq = self.docs_stats.get(doc_id, (0, 0))
+                length += freq
+                self.average_doc_length += freq
+                if freq > max_freq:
+                    max_freq = freq
+                self.docs_stats[doc_id] = length, max_freq
 
     def signal_end_of_merge(self):
         self.average_doc_length /= float(self.collection_size)
