@@ -3,14 +3,16 @@ import operator
 import re
 
 from queries.abstract_queries import AbstractQueryParser
+from porterstemmer import Stemmer
 
 
 class VectorQueryParser(AbstractQueryParser):
 
     def _clean_query(self, query):
+        stemmer = Stemmer()
         result = ""
         for word in filter(None, re.split('[^a-zA-Z\d:]', query)):
-            result += word.lower() + " "
+            result += stemmer(word.lower()) + " "
         return result
 
     def execute_query(self, query):

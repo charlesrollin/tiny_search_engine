@@ -1,7 +1,9 @@
 from threading import Thread, Lock
+
 from utils import make_dirs
 
 from printer import ParsePrinter
+from porterstemmer import Stemmer
 
 
 class AbstractParseManager(object):
@@ -49,6 +51,7 @@ class AbstractBlockParser(Thread):
         raise NotImplementedError
 
     def run(self):
+        stemmer = Stemmer()
         block = self.block
         id_storer = self.id_storer
         tokens_amount = 0
@@ -58,8 +61,9 @@ class AbstractBlockParser(Thread):
             with open(id_storer.doc_map[doc_id]) as my_file:
                 for line in my_file:
                     for word in self._process_line(line):
+                        stem_word = stemmer(word)
                         tokens_amount += 1
-                        doc_frequency_dict[word] = doc_frequency_dict.get(word, 0) + 1
+                        doc_frequency_dict[stem_word] = doc_frequency_dict.get(stem_word, 0) + 1
             doc_frequency_dict = {w: v for w, v in doc_frequency_dict.items() if not self._cleaner.is_common_word(w)}
             for word in doc_frequency_dict.keys():
                 term_id = id_storer.term_map[word] if word in id_storer.term_map else id_storer.add_term(word)
