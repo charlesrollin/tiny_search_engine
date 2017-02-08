@@ -119,7 +119,7 @@ Such a solution  makes the whole system scalable but has an impact on performanc
 
 #### IO Buffers
 
-During the construction of the idnex, this engine uses simple (i.e. homemade) read/write queues. To represent the memory limitations of the system, these queues have a limited capacty, expressed as an amount of lines.
+During the construction of the index, this engine uses simple (i.e. homemade) read/write queues. To represent the memory limitations of the system, these queues have a limited capacty, expressed as an amount of lines.
 The default limitation is set to 2200 lines (empirically chosen), which means we assume no more than 2200 posting lists can fit in-memory.
 
 However, posting lists do not have an homogeneous size (long-tail phenomenon) and their size directly depends on the size of the collection! Hence the simplicity of the current queues does not allow a "true" scalability.
