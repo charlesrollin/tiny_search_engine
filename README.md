@@ -58,12 +58,12 @@ optional arguments:
 #### Index Construction
 
 The construction of the inverted index follows 2 steps:
-* Parse: build a simple inverted index for each "block" of the collection and collect statistics. Some cleaning in done on the data:
+* Parse: build a simple inverted index for each "block" of the collection and collect statistics. Additionally the data is cleaned:
     * Porter2 stemming (using the `PorterStemmer` package)
     * Removal of common words
 * Merge: merge the block indexes and use the statistics to refine the posting lists with weights
 
-Below is the class diagram for the Index Construction Module: **outdated**
+Below is the class diagram for the Index Construction Module:
 
 ![Results](./img/index_construction.png)
 
@@ -82,7 +82,7 @@ Two types of queries are supported:
 
 The inverted index file is accessed through the Collection Index Reader. The Reader maintains a map of the position of each term in the index file, which insures a O(1) access to posting lists.
 
-No k-Top algorithm was implemented, for the response times are already acceptable.
+No K-Top algorithm was implemented because retrieving the lists of potentially relevant documents is not an expensive operation (in this exercise).
 
 #### Evaluation
 
@@ -111,7 +111,7 @@ In order to handle a request, this engine needs two maps:
 * `terms = {term: term_id}` maps a term with its id
 * `docs = {doc_id: doc_path}` maps a doc id with the document it represents
 
-In addition, a third map improves performances when reading a posting list from the index file.
+In addition, a third map improves performances when searching for a posting list in the index file.
 
 These maps are a dense index on a set of IDs. If we were to reach the billion terms in a collection, such maps would not fit in memory anymore. One would instead turn them into non-dense indexes pointing at a range of IDs (either stored  in a local file or on another machine).
 
@@ -119,7 +119,7 @@ Such a solution  makes the whole system scalable but has an impact on performanc
 
 #### IO Buffers
 
-This engine uses simple read/write queues. To represent the memory limitations of the system, these queues have a limited capacty, expressed as an amount of lines.
+During the construction of the idnex, this engine uses simple (i.e. homemade) read/write queues. To represent the memory limitations of the system, these queues have a limited capacty, expressed as an amount of lines.
 The default limitation is set to 2200 lines (empirically chosen), which means we assume no more than 2200 posting lists can fit in-memory.
 
 However, posting lists do not have an homogeneous size (long-tail phenomenon) and their size directly depends on the size of the collection! Hence the simplicity of the current queues does not allow a "true" scalability.
@@ -153,7 +153,7 @@ The steps are quite equivalent in complexity for both use expensive operations:
 
 ### Index size
 
-The index is currently stored as string (hence not the most effective storage method).
+The index is currently stored as a string (hence not the most effective storage method).
 ```bash
 term_id:doc_id, freq, weight|doc_id, freq, weight| ... |doc_id, freq, weight
 ```
@@ -215,4 +215,4 @@ This plot sums up the results of the engine evaluation:
 
 ![Results](./img/results_riw.png)
 
-One function behaves better than the others with a MAP of 0.533: the Evolutionary Learned Scheme (#7). However this weight needs an extra statistic hence the construction of the index lasts longer with it (~ 12% longer).
+One function behaves better than the others with a MAP of 0.533: the Evolutionary Learned Scheme (#7). However this weight needs an extra statistic to be computed, hence building the index lasts ~ 12% longer when using it.
