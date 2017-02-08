@@ -69,7 +69,7 @@ Below is the class diagram for the Index Construction Module:
 
 The Parse step is multi-threaded(-ish because of [Python GLI](https://en.wikipedia.org/wiki/Global_interpreter_lock)). It outputs various statistics on the collection (e.g. average length of documents) used to compute advanced weighting functions.
 
-The Merge step is a many-producers one-consumer process that was implemented with no concurrent programming.
+The Merge step is a many-producers one-consumer process that was implemented with no concurrent programming. Because it writes the index sequentially, the Merger can store the position of each term of the collection within the file. The map produced will be used when querying the engine.
 
 #### Querying
 
@@ -80,9 +80,9 @@ Two types of queries are supported:
 
 ![Results](./img/queries.png)
 
-The inverted index file is accessed through the Collection Index Reader. The Reader maintains a map of the position of each term in the index file, which insures a O(1) access to posting lists.
+The inverted index file is accessed through the Collection Index Reader. The Reader uses the map that was produced during the construction of the index to retrieve posting lists. Hence getting the list of potentially relevant documents on a query is a O(1)(-ish) operation.
 
-No K-Top algorithm was implemented because retrieving the lists of potentially relevant documents is not an expensive operation (in this exercise).
+For this reason, no K-Top algorithm was implemented in this exercise.
 
 #### Evaluation
 
