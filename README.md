@@ -53,23 +53,23 @@ optional arguments:
 
 ## Architecture
 
-Describe global architecture here & pertinent details.
-
 ### Global architecture
 
 #### Index Construction
 
-Constructing the inverted index requires 3 steps:
-* Parse: build a simple inverted index for each "block" of the collection
-* Merge: merge the block indexes and collect statistics on collection
-* Refine: use the statistics to refine the index with weights
+The construction of the inverted index follows 2 steps:
+* Parse: build a simple inverted index for each "block" of the collection and collect statistics. Some cleaning in done on the data:
+    * Porter2 stemming (using the `PorterStemmer` package)
+    * Removal of common words
+* Merge: merge the block indexes and use the statistics to refine the posting lists with weights
 
-Below is the class diagram for the Index Construction Module:
+Below is the class diagram for the Index Construction Module: **outdated**
 
 ![Results](./img/index_construction.png)
 
-The Parse step is multi-threaded(-ish because of [Python GLI](https://en.wikipedia.org/wiki/Global_interpreter_lock)).
-The Merge step outputs various statistics on the collection (e.g. average length of documents, etc.) used to compute advanced weigthing functions.
+The Parse step is multi-threaded(-ish because of [Python GLI](https://en.wikipedia.org/wiki/Global_interpreter_lock)). It outputs various statistics on the collection (e.g. average length of documents) used to compute advanced weighting functions.
+
+The Merge step is a many-producers one-consumer process that was implemented with no concurrent programming.
 
 #### Querying
 
@@ -81,6 +81,8 @@ Two types of queries are supported:
 ![Results](./img/queries.png)
 
 The inverted index file is accessed through the Collection Index Reader. The Reader maintains a map of the position of each term in the index file, which insures a O(1) access to posting lists.
+
+No k-Top algorithm was implemented, for the response times are already acceptable.
 
 #### Evaluation
 
@@ -140,12 +142,14 @@ The duration of each step of the index construction is displayed below for both 
 
 | Steps | CACM  | CS276 |
 | --- | --- | --- |
-| Parse (s)   | 0.5  | 57   |
-| Merge (s)   | 0.4  | 60   |
-| Refine (s)   | 0.9  | 90   |
-| **Total (s)** | 1.8  | 207  |
+| Parse (s)   | 0.9  | 74   |
+| Merge (s)   | 0.8  | 105   |
+| **Total (s)** | 1.7  | 179  |
 
-As we can see, the most expensive step is the refinement of the index: computing weights involves costly mathematical operations whereas parsing and merging involves simple read and copy operations.
+The steps are quite equivalent in complexity for both use expensive operations: 
+
+* the stemming in the Parse step
+* the weights computations in the Merge step (costly mathematical operations)
 
 ### Index size
 
@@ -162,7 +166,7 @@ term_id:doc_id, freq, weight|doc_id, freq, weight| ... |doc_id, freq, weight
 | **Total (MB)** | 2.7 | 335.7 |
 | **Ratio (%)** | 20.6 | 77.9 |
 
-From the above table, we can see that this storage method is not viable for real-life search engines.
+From the `Ratio` line of the above table, we can see that this storage method is not viable for real-life search engines.
 
 As a solution, one would implement a compression method to decrease the size of the index.
 
@@ -211,4 +215,4 @@ This plot sums up the results of the engine evaluation:
 
 ![Results](./img/results_riw.png)
 
-One function behaves better than the others: the Evolutionary Learned Scheme (#7).
+One function behaves better than the others with a MAP of 0.533: the Evolutionary Learned Scheme (#7). However this weight needs an extra statistic hence the construction of the index lasts longer with it (~ 12% longer).
