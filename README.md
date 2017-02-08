@@ -98,7 +98,12 @@ Below is the class diagram for the Evaluation Module:
 
 ### Zoom In
 
-Detail specific technical choices and their reasons.
+Detail specific technical choices and their reasons. Potential subjects:
+
+* The use of read / write queues (part of it is already detailled in the Limitations section)
+* The WeightFactory
+
+Maybe this should be moved as an Appendix?
 
 ### Limitations
 
