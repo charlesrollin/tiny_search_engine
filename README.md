@@ -82,7 +82,7 @@ Two types of queries are supported:
 
 The inverted index file is accessed through the Collection Index Reader. The Reader uses the map that was produced during the construction of the index to retrieve posting lists. Hence getting the list of potentially relevant documents on a query is a O(1)(-ish) operation.
 
-No Top-k algorithm was implemented in this exercise: the result list is sorted using the python built-in `sorted`. Hence time complexity is O(n.log(n)) (vs. 0(n.log(k))). This can be an issue if a query has too many results.
+No Top-k algorithm was implemented in this exercise: the result list is sorted using the python built-in `sorted`. Hence time complexity is O(n.log(n)) (vs. O(n.log(k))). This can be an issue if a query has too many results.
 An improvment would be to run a Top-k algorithm, display the sub-results and run a background sort on the remaining documents.
 
 #### Evaluation
@@ -120,7 +120,7 @@ In order to handle a request, this engine needs three maps:
 * `docs = {doc_id: doc_path}` maps a doc id with the document it represents
 * `positions = {term_id: position}` maps a term id with the position of its posting list in the index file
 
-The maps on terms are a dense index on a set of IDs. If we were to reach the billion terms in a collection, such maps would not fit in memory anymore. One would instead turn them into non-dense indexes pointing at a range of IDs (either stored  in a local file or on another machine).
+The maps on terms are a dense index on a set of integers. If we were to reach the billion terms in a collection, such maps would not fit in memory anymore. One would instead turn them into non-dense indexes pointing at a range of IDs (either stored  in a local file or on another machine).
 
 Such a solution  makes the whole system scalable but has an impact on performances. Hence the use of dense indexes in this engine.
 
@@ -156,7 +156,7 @@ The duration of each step of the index construction is displayed below for both 
 The steps are quite equivalent in complexity for both use expensive operations: 
 
 * the stemming in the Parse step
-* the weights computations in the Merge step (costly mathematical operations)
+* the weights computations in the Merge step (expensive mathematical operations)
 
 ### Index size
 
