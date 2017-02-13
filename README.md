@@ -223,3 +223,108 @@ This plot sums up the results of the engine evaluation:
 ![Results](./img/results_riw.png)
 
 One function behaves better than the others with a MAP of 0.533: the Evolutionary Learned Scheme (#7). However this weight needs an extra statistic to be computed, hence building the index lasts ~ 12% longer when using it.
+
+## Appendix
+
+### Appendix A: Merge Step & Concurrent Programming
+
+The Merge step implements the final step of the BSBI algorithm? The `Block Index Merger` uses k `Sequential Index Reader` to read from k sorted block index files and writes to the final index file with a `Sequential Index Writer`. Each `Reader` is a read queue with the `pop` and `peek` methods.
+At each "round", the `Block Index Merger` must retrieve the smallest element (lexicographically talking) from its readers. Hence the use of the `peek` method.
+
+However, the very notion of `peek` is contradictory with concurrent programming: why check the existence & value of an item if it is likely to be gone later? Hence the dilemma:
+* Use python's `queue.Queue` to allow multi-threading, but implement a peek-like, thread-safe method
+* Use python's `collections.deque` which has a peek-like method and is thread-safe... So this option should work!
+
+The current implementation uses `queue.Queue` in a mono-thread context, with a homemade `peek` method.
+
+### Appendix B: The WeightFactory
+
+During the construction of the index, a few statistics are stored in order to compute weights later in the process.
+THe exhaustive statistics are:
+* the amount of documents in the collection
+* the average length of documents in the collection
+* for each document of the collection
+    * its length
+    * the frequency of its most frequent term
+In particular, the nature of the statistics does not depend on the weight function chosen by the user.
+
+In order to automate the weight calculation, this engine defines an abstract `Weighter` class and as many subclasses as there are weight functions to test. The abstract class defines an interface composed of:
+* `_weigh_function(*args)` that will be the actual weight-computing method. Its arguments come from the index file.
+* `_get_stat_args(doc_id)` that will retrieve any statistics required to compute the weight.
+Eventually, the `weight` method links the two:
+```python
+class Weighter(object):
+    """Compute a weight and store a CollectionStats object.
+    Any implementation of a weight function must inherit from this class and be decorated with the declare_subclass
+    method in order to be declared to the WeightFactory (see examples below).
+    """
+    
+    [...]
+
+    def weight(self, doc_id, *args):
+        """Compute the weight of a term in a document.
+        *args is the data from the index needed to compute the weight (usually td and df).
+        Extra data will be fetched directly by this class from its stats object.
+        """
+        return self._weight_function(*(list(args) + self._get_stat_args(doc_id)))  # call the weight function with args from both the index and the stats object
+
+    def _weight_function(self, *args):
+        raise NotImplementedError
+
+    def _get_stat_args(self, doc_id):
+        """Retrieve from self.stats the data needed to compute a weight."""
+        raise NotImplementedError
+```
+
+Each subclass then declares itself to a `WeightFactory` using a Python decorator. The Factory will serve instances on demand. Hence to add a new weight function, one would simply create a class that inherits from `Weighter`, decorate it properly and implement the two methods `_weight_function` and `_get_stats_args`.
+
+### Appendix C: Compressing the index
+
+As pointed out in the Performances section, the current, raw index is not viable for real-life search engines. In addition to detecting that issue, an attempt was made to compress the index using the built-in `struct` module. Unfortunately, the attempt was unsuccessful. This appendix discusses why that module was used and how it was a failure.
+
+#### Why `struct`?
+
+As described previously, this engine heavily relies on the `position` map that allows a fast search in the index file. Building this map is possible because the index is written **sequentially**, i.e. line by line. Hence a compression (if compression there is) must occur at the posting-list level. This discards classic serialization modules such as `pickle`.
+
+The `struct` module allows the conversion between Python values and binary data. Therefore, it is possible to convert the values that compose a posting list, write the index file in binary mode, and decrase the size of the index. In particular, weights in binary will have a fix size of 4 bytes, whereas the size of their string representation depends on its precision.
+
+#### A failed attempt
+
+Each posting list is represented in memory as a tuple:
+```python
+posting_list = (term_id, [(doc_id, freq, weight), ... (doc_id, freq, weight)])
+```
+which can be converted in binary with the following instructions:
+```python
+result = struct.pack('i', posting_list[0])  # the term id
+for posting in posting_list[1]:
+    result += struct.pack('2if', posting)   # each posting
+result += struct.pack('c', b'\n')           # newline char
+```
+
+Assuming now that we read a line from the index file, its length will be of the form `4 + 12*k + 1` where k is the length of the posting list. Converting this line to Python values is therefore:
+```python
+term_id = struct.unpack_from('i', bin_line)
+posting_list = struct.iter_unpack('2if', bin_line[4:-1])  # remove first integer and last newline char
+```
+
+The process has a huge flaw: python's `readline` method looks for `\n` characters, i.e. `\x0a` in hex! This means that if there is a 10 in the posting list, it will be recognized later as a newline character!
+
+As a solution: build the `position` map during the parse step, then during the merge step, only read the necessary amount of bytes. Then do the same during queries!
+
+### Appendix D: Boolean Queries
+
+Boolean queries must respect the following structure:
+* the query is written in CNF, i.e. a conjunction of disjunctions
+* disjunctions are separated with the && (AND) operator and potentially preceded by the ! (NOT) operator
+* a disjunction is a list of terms separated with the || (OR) operator and surrounded with parenthesis
+
+Two extra rules ensure that queries are well-defined:
+* the NOT operator can only apply to a disjunction (and not to a term)
+    * `(foobar) && !(foo || bar)` is well-defined
+    * `(foobar) && (!foo || bar)` is not
+* the query must contain at least one not-negated disjunction
+    * `(foobar) && !(foo || bar)` is well-defined
+    * `!(foo || bar)` is not
+    
+These extra rules rely on the assumption that the main use-case of the NOT operator is to filter an existing query, but not to get the complement of a query.
