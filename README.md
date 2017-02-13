@@ -57,32 +57,33 @@ optional arguments:
 
 #### Index Construction
 
-The construction of the inverted index follows 2 steps:
+The construction of the inverted index implements the BSBI algorithm. It follows 2 steps:
 * Parse: build a simple inverted index for each "block" of the collection and collect statistics. Additionally the data is cleaned:
     * Porter2 stemming (using the `PorterStemmer` package)
-    * Removal of common words
+    * Removal of common words (using the `common_words` file provided during the class)
 * Merge: merge the block indexes and use the statistics to refine the posting lists with weights
 
 Below is the class diagram for the Index Construction Module:
 
 ![Results](./img/index_construction.png)
 
-The Parse step is multi-threaded(-ish because of [Python GLI](https://en.wikipedia.org/wiki/Global_interpreter_lock)). It outputs various statistics on the collection (e.g. average length of documents) used to compute advanced weighting functions.
+The Parse step is multi-threaded(-ish because of [Python GLI](https://en.wikipedia.org/wiki/Global_interpreter_lock)). It outputs various statistics on the collection (e.g. average length of documents). These statistics will later be given to a Weighter object that will compute advanced weighting functions.
 
-The Merge step is a many-producers one-consumer process that was implemented with no concurrent programming. Because it writes the index sequentially, the Merger can store the position of each term of the collection within the file. The map produced will be used when querying the engine.
+The Merge step is a many-producers/one-consumer process that was implemented with no concurrent programming (see Appendix ? for explanation). Because it writes the index sequentially, the Merger can store the position of each posting list within the file. The map produced will be used when querying the engine.
 
 #### Querying
 
 Two types of queries are supported:
 
-+ Boolean queries of the form: `(foo || bar) && !(foobar)`
++ Boolean queries of the form: `(foo || bar) && !(foobar)` (see Appendix ? for details and explanations)
 + Vector queries of the form: `foo bar foobar`
 
 ![Results](./img/queries.png)
 
 The inverted index file is accessed through the Collection Index Reader. The Reader uses the map that was produced during the construction of the index to retrieve posting lists. Hence getting the list of potentially relevant documents on a query is a O(1)(-ish) operation.
 
-For this reason, no K-Top algorithm was implemented in this exercise.
+No Top-k algorithm was implemented in this exercise: the result list is sorted using the python built-in `sorted`. Hence time complexity is O(n.log(n)) (vs. 0(n.log(k))). This can be an issue if a query has too many results.
+An improvment would be to run a Top-k algorithm, display the sub-results and run a background sort on the remaining documents.
 
 #### Evaluation
 
@@ -102,6 +103,8 @@ Detail specific technical choices and their reasons. Potential subjects:
 
 * The use of read / write queues (part of it is already detailled in the Limitations section)
 * The WeightFactory
+* The limitations on boolean queries
+* The failed attempt at compressing data
 
 Maybe this should be moved as an Appendix?
 
@@ -111,14 +114,13 @@ While this engine works fine with the CACM and CS276 collections, it is not trul
 
 #### In-memory maps
 
-In order to handle a request, this engine needs two maps:
+In order to handle a request, this engine needs three maps:
 
 * `terms = {term: term_id}` maps a term with its id
 * `docs = {doc_id: doc_path}` maps a doc id with the document it represents
+* `positions = {term_id: position}` maps a term id with the position of its posting list in the index file
 
-In addition, a third map improves performances when searching for a posting list in the index file.
-
-These maps are a dense index on a set of IDs. If we were to reach the billion terms in a collection, such maps would not fit in memory anymore. One would instead turn them into non-dense indexes pointing at a range of IDs (either stored  in a local file or on another machine).
+The maps on terms are a dense index on a set of IDs. If we were to reach the billion terms in a collection, such maps would not fit in memory anymore. One would instead turn them into non-dense indexes pointing at a range of IDs (either stored  in a local file or on another machine).
 
 Such a solution  makes the whole system scalable but has an impact on performances. Hence the use of dense indexes in this engine.
 
