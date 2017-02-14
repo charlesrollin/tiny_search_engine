@@ -34,7 +34,7 @@ if __name__ == '__main__':
     arg_parser.add_argument('-w', '--weight', default=0, type=int, help=textwrap.dedent(help_str))
     arg_parser.add_argument('-r', '--refresh', help="add this flag to force refresh of index", action="store_true")
     arg_parser.add_argument('-e', '--evaluate', help="add this flag to launch engine evaluation", action="store_true")
-    arg_parser.add_argument('-m', '--memory', default=1100, type=int, help="set memory limitations")
+    arg_parser.add_argument('-m', '--memory', default=2200, type=int, help="set memory limitations")
     args = arg_parser.parse_args()
     if args.collection not in ['cs276', 'cacm']:
         print("\tThe %s collection is not supported yet..." % args.collection)

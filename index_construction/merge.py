@@ -2,18 +2,20 @@ from os import remove
 
 from index_construction.index_IO import SequentialIndexWriter, SequentialIndexReader
 from printer import MergePrinter
-from utils import save_map
+from utils import save_positions
 
 
 class BlockIndexMerger(object):
 
-    def __init__(self, collection, weighter, total_capacity, verbose):
+    def __init__(self, collection, block_positions, weighter, total_capacity, verbose):
         self._collection = collection
         self._readers = list()
         self._capacity = total_capacity / (len(collection.blocks) + 1)
         for block in collection.blocks:
-            self._readers.append(SequentialIndexReader("indexes/" + block.block_path, self._capacity))
-        self._writer = SequentialIndexWriter("indexes/" + self._collection.collection_path + ".index", self._capacity, refined=True)
+            self._readers.append(SequentialIndexReader("indexes/" + block.block_path,
+                                                       block_positions[block.block_path], self._capacity))
+        self._writer = SequentialIndexWriter("indexes/" + self._collection.collection_path + ".index", self._capacity,
+                                             refined=True)
         self.weighter = weighter
         self.printer = MergePrinter(verbose)
 
@@ -62,5 +64,5 @@ class BlockIndexMerger(object):
                     self.printer.print_merge_progress_message(counter)
         self.printer.print_end_of_merge_message(counter)
         self._end()
-        save_map(self._writer.positions, "indexes/" + self._collection.collection_path + "/positions")
+        save_positions(self._writer.positions, "indexes/" + self._collection.collection_path + "/positions")
         return self._writer.positions

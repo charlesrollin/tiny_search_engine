@@ -1,8 +1,9 @@
+from collections import deque
 from queue import Queue
 
 from os import remove
 
-from utils import file_line_to_term_index, term_index_to_file_line
+from utils import term_index_to_bin, bin_to_term_index, make_dirs
 
 
 class SequentialIndexReader(object):
@@ -10,22 +11,29 @@ class SequentialIndexReader(object):
     An implementation of a reading queue with a fixed capacity.
     """
 
-    def __init__(self, file_path, capacity):
-        self._position = 0
+    def __init__(self, file_path, positions, capacity):
+        self._positions = positions
         self.file_path = file_path
         self._read_buffer = Queue(capacity)  # Using thread-safe object while not in multi-thread environment...
         self._fill_queue()
 
+    def _read_next_binary_list(self, file):
+        current_position = self._positions.popleft()
+        if len(self._positions) == 0:
+            size = -1
+        else:
+            size = self._positions[0] - current_position
+        return file.read(size)
+
     def _fill_queue(self):
         if self._read_buffer.empty():
-            with open(self.file_path) as index_file:
-                index_file.seek(self._position)
-                while not self._read_buffer.full():
-                    new_line = index_file.readline()
-                    if new_line == "":
-                        break
-                    self._read_buffer.put(file_line_to_term_index(new_line))
-                self._position = index_file.tell()
+            with open(self.file_path, 'rb') as index_file:
+                if len(self._positions) == 0:
+                    return
+                index_file.seek(self._positions[0])
+                while not self._read_buffer.full() and len(self._positions) > 0:
+                    new_bin = self._read_next_binary_list(index_file)
+                    self._read_buffer.put(bin_to_term_index(new_bin))
 
     def pop(self):
         result = self._read_buffer.get()
@@ -47,20 +55,20 @@ class SequentialIndexWriter(object):
     def __init__(self, file_path, capacity, refined=False):
         self.file_path = file_path
         self._write_buffer = list()
-        self._refined = refined
         self.capacity = capacity
-        self.positions = dict()
+        self.refined= refined
+        self.positions = deque()
         try:  # because of the append mode, we first try to delete the existing file
             remove(file_path)
         except OSError:
             pass
+        make_dirs(file_path)  # recursively create the dirs in path if necessary
 
     def _flush(self):
-        with open(self.file_path, 'a') as index_file:
+        with open(self.file_path, 'ab') as index_file:
             for term_index in self._write_buffer:
-                if self._refined:
-                    self.positions[term_index[0]] = index_file.tell()
-                index_file.write(term_index_to_file_line(term_index))
+                self.positions.append(index_file.tell())
+                index_file.write(term_index_to_bin(term_index, refined=self.refined))
         self._write_buffer = list()
 
     def append(self, term_index):
