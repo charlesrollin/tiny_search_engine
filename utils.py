@@ -33,7 +33,6 @@ def load_positions(positions_path):
     return result
 
 
-
 def save_positions(positions, file_path):
     with open(file_path, 'w') as positions_file:
         for position in positions:
@@ -41,7 +40,7 @@ def save_positions(positions, file_path):
 
 
 def term_index_to_bin(term_index, refined=False):
-    bin_format = '2if' if refined else '2i'
+    bin_format = 'if' if refined else '2i'
     result = struct.pack('i', term_index[0])
     for posting in term_index[1]:
         result += struct.pack(bin_format, *posting)
@@ -49,7 +48,7 @@ def term_index_to_bin(term_index, refined=False):
 
 
 def bin_to_term_index(raw_bin, refined=False):
-    bin_format = '2if' if refined else '2i'
+    bin_format = 'if' if refined else '2i'
     term_id = struct.unpack_from('i', raw_bin)[0]
     occurrences = list(struct.iter_unpack(bin_format, raw_bin[4:]))
     return term_id, occurrences

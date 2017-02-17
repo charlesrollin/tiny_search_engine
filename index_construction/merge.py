@@ -39,10 +39,10 @@ class BlockIndexMerger(object):
         term_id, posting_list = index_line
         if self.weighter.weight_function_id == 6:
             cf = sum([f for d_id, f in posting_list])
-            new_posting_list = [(doc, freq, self.weighter.weight(doc, freq, len(posting_list), cf))
+            new_posting_list = [(doc, self.weighter.weight(doc, freq, len(posting_list), cf))
                                 for doc, freq in posting_list]
         else:
-            new_posting_list = [(doc, freq, self.weighter.weight(doc, freq, len(posting_list)))
+            new_posting_list = [(doc, self.weighter.weight(doc, freq, len(posting_list)))
                                 for doc, freq in posting_list]
         # self.n_d[doc_id] = self.n_d.get(doc_id, 0) + temp_weight*temp_weight
         # / ! \ Nd not computed any more!
