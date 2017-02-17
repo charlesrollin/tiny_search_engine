@@ -25,6 +25,15 @@ def save_map(m_map, file_path):
             map_file.write("%s : %s\n" % (key, m_map[key]))
 
 
+def load_positions(positions_path):
+    result = list()
+    with open(positions_path) as positions_file:
+        for line in positions_file:
+            result.append(int(line))
+    return result
+
+
+
 def save_positions(positions, file_path):
     with open(file_path, 'w') as positions_file:
         for position in positions:
