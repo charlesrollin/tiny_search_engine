@@ -2,20 +2,32 @@ from collections import deque
 from queue import Queue
 
 from os import remove
+from threading import Thread
 
 from utils import term_index_to_bin, bin_to_term_index, make_dirs
 
 
-class SequentialIndexReader(object):
+class SequentialIndexReader(Thread):
     """
     An implementation of a reading queue with a fixed capacity.
     """
 
     def __init__(self, file_path, positions, capacity):
+        Thread.__init__(self)
+        self.daemon = True
         self._positions = positions
         self.file_path = file_path
-        self._read_buffer = Queue(capacity)  # Using thread-safe object while not in multi-thread environment...
-        self._fill_queue()
+        self._read_buffer = Queue(capacity)
+        self._head = None
+
+    def run(self):
+        with open(self.file_path, 'rb') as index_file:
+            index_file.seek(self._positions[0])
+            self._head = bin_to_term_index(self._read_next_binary_list(index_file))
+            while len(self._positions) > 0:
+                new_bin = self._read_next_binary_list(index_file)
+                self._read_buffer.put(bin_to_term_index(new_bin))
+        self._read_buffer.put(None)
 
     def _read_next_binary_list(self, file):
         current_position = self._positions.popleft()
@@ -36,15 +48,12 @@ class SequentialIndexReader(object):
                     self._read_buffer.put(bin_to_term_index(new_bin))
 
     def pop(self):
-        result = self._read_buffer.get()
-        if self._read_buffer.empty():
-            self._fill_queue()
-        return result
+        head = self._head[0], list(self._head[1])  # return a copy of _head not a pointer to it
+        self._head = self._read_buffer.get()
+        return head
 
     def peek(self):
-        if self._read_buffer.empty():
-            return None
-        return self._read_buffer.queue[0]
+        return self._head
 
 
 class SequentialIndexWriter(object):

@@ -14,6 +14,8 @@ class BlockIndexMerger(object):
         for block in collection.blocks:
             self._readers.append(SequentialIndexReader("indexes/" + block.block_path,
                                                        block_positions[block.block_path], self._capacity))
+        for reader in self._readers:
+            reader.start()
         self._writer = SequentialIndexWriter("indexes/" + self._collection.collection_path + ".index", self._capacity,
                                              refined=True)
         self.weighter = weighter
