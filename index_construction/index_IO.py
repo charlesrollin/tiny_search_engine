@@ -23,11 +23,13 @@ class SequentialIndexReader(Thread):
     def run(self):
         with open(self.file_path, 'rb') as index_file:
             index_file.seek(self._positions[0])
-            self._head = bin_to_term_index(self._read_next_binary_list(index_file))
             while len(self._positions) > 0:
                 new_bin = self._read_next_binary_list(index_file)
                 self._read_buffer.put(bin_to_term_index(new_bin))
         self._read_buffer.put(None)
+
+    def wait_for_readiness(self):
+        self._head = self._read_buffer.get()
 
     def _read_next_binary_list(self, file):
         current_position = self._positions.popleft()
