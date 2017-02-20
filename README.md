@@ -61,7 +61,7 @@ The construction of the inverted index implements the BSBI algorithm. It follows
     * Removal of common words (using the `common_words` file provided during the class)
 * Merge: merge the block indexes and use the statistics to refine the posting lists with weights
 
-Below is the class diagram for the Index Construction Module:
+Below is the class diagram for the Index Construction Package:
 
 ![Results](./img/index_construction.png)
 
@@ -75,6 +75,8 @@ Two types of queries are supported:
 
 + Boolean queries of the form: `(foo || bar) && !(foobar)` (see Appendix ? for details and explanations)
 + Vector queries of the form: `foo bar foobar`
+
+Below is the class diagram for the Queries Package:
 
 ![Results](./img/queries.png)
 
@@ -118,7 +120,7 @@ The default limitation is set to 2200 lines (empirically chosen), which means we
 
 However, posting lists do not have an homogeneous size (long-tail phenomenon) and their size directly depends on the size of the collection! Hence the simplicity of the current queues does not allow a "true" scalability. To fix this, one would check the size of each posting list before loading it in memory and would express the capacity of the queues as an amount of bytes. This approach works until even a single posting list is too big to fit in memory.
 
-Currently the `positions` map allows an easy computation of the size of posting lists. However, implementing the size checking in Python's queues would require extra work that is out of the scope of the exercise (from my humble opinion).
+Currently the `positions` map allows an easy computation of the size of posting lists. However, implementing the size checking in Python's queues would require extra work that is out of the scope of the exercise (from the author's humble opinion).
 
 ***
 
@@ -147,13 +149,14 @@ The steps are quite equivalent in complexity for both use expensive operations:
 
 ### Index size
 
-In a first approach, the index was stored as a string: (cacm: 2.2MB -> 20% | cs276: 335.7MB -> 78%)
+In a first approach, the index was stored as a string:
 ```bash
 term_id:doc_id, freq, weight|doc_id, freq, weight| ... |doc_id, freq, weight
 ```
 This resulted in an index of more than 300MB for the cs276 collection!
 
 A better approach makes use of Python's `struct` module to directly write bytes in the index file (see Appendix C for details). The size of each elements is shown below for both collections:
+
 | Items | CACM | CS276 |
 | --- | --- | --- |
 | Collection size (MB) | 13.1 | 430.7 |
@@ -163,9 +166,9 @@ A better approach makes use of Python's `struct` module to directly write bytes 
 | **Total (MB)** | 1.0 | 102.1 |
 | **Ratio (%)** | 7.6 | 23.7 |
 
-The `Ratio` line of the table shows that the index size grows 3 times faster than the collection size. Assuming this growth is linear in the size of the working collection, the ratio will be equal to one round 1.7GB.
+The `Ratio` line of the table shows that the index size grows 3 times faster than the collection size. Assuming this growth is linear in the size of the working collection, the ratio will be equal to one for a collection of approx. 1.7GB..
 
-To fourther improve the compression, one would implement Variable Byte Encoding (though it cannot be used on floats...).`
+To further improve the compression, one would implement Variable Byte Encoding (though it cannot be used on floats...).
 
 ### Requests performance
 
@@ -293,19 +296,19 @@ for posting in posting_list[1]:
     result += struct.pack('if', posting)   # each posting
 ```
 
-Assuming now that we read a posting list from the index file, its length will be of the form `4 + 8*k` where k is the length of the posting list. Converting this line to Python values is therefore:
+Assuming now that we read a posting list from the index file, the length of its binary representation will be of the form `4 + 8*k` where k is the length of the posting list. Converting this line to Python values is therefore:
 ```python
 term_id = struct.unpack_from('i', bin_line)
 posting_list = struct.iter_unpack('if', bin_line[4:])  # remove first integer
 ```
 
-To only read the necessay amount of bytes when retrieving a posting list, we need to know its size. This can be computed from the `positions` map that is produced during each step of the index construction.
+To only read the necessary amount of bytes when retrieving a posting list, we need to know its size. This can be computed from the `positions` map that is produced during each step of the index construction.
 
 #### Expected improvements
 
-In the first naive approach, a float was represented with 5 digits: a single string representation of a float was 5*4 ~ 20B. 
+In the first naive approach, a float was represented with 5 digits: a single string representation of a float was `5*4 = 20B`. 
 
-Hence the fist size of a posting was `4 + 5*4` which is then decreased to `4 + 4`. This means that we can expect to divide the size of the index by 3. This matches with the experimental results described in the Performances section.
+Hence the first size of a posting was `4 + 5*4` which has been decreased to `4 + 4`. This means that we can expect to divide the size of the index by 3. This matches the experimental results described in the Performances section.
 
 ### Appendix D: Boolean Queries
 
