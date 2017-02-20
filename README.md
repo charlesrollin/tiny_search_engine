@@ -73,7 +73,7 @@ The Merge step is a many-producers/one-consumer process. It merges all the block
 
 Two types of queries are supported:
 
-+ Boolean queries of the form: `(foo || bar) && !(foobar)` (see Appendix ? for details and explanations)
++ Boolean queries of the form: `(foo || bar) && !(foobar)` (see Appendix D for details and explanations)
 + Vector queries of the form: `foo bar foobar`
 
 Below is the class diagram for the Queries Package:
@@ -82,8 +82,8 @@ Below is the class diagram for the Queries Package:
 
 The inverted index file is accessed through the Collection Index Reader. The Reader uses the map that was produced during the construction of the index to retrieve posting lists. Hence getting the list of potentially relevant documents on a query is a O(1)(-ish) operation.
 
-No Top-k algorithm was implemented in this exercise: the result list is sorted using the python built-in `sorted`. Hence time complexity is O(n.log(n)) (vs. O(n.log(k))). This can be an issue if a query has too many results.
-An improvment would be to run a Top-k algorithm (using Python's `heapq` module), display the sub-results and run a background sort on the remaining documents.
+No Top-k algorithm was implemented in this exercise: the result list is sorted using the python built-in `sorted`. Hence time complexity is in `O(n.log(n))` (vs. `O(n.log(k))`). This can be an issue if a query has too many results.
+An improvement would be to run a Top-k algorithm (using Python's `heapq` module), display the sub-results and run a background sort on the remaining documents.
 
 #### Evaluation
 
@@ -115,12 +115,27 @@ Such a solution makes the whole system scalable but has an impact on performance
 
 #### IO Buffers
 
-During the construction of the index, this engine uses simple (i.e. homemade) read/write queues. To represent the memory limitations of the system, these queues have a limited capacty, expressed as an amount of lines.
+During the construction of the index, this engine uses simple read/write queues. To represent the memory limitations of the system, these queues have a limited capacty, expressed as an amount of lines.
 The default limitation is set to 2200 lines (empirically chosen), which means we assume no more than 2200 posting lists can fit in-memory.
 
 However, posting lists do not have an homogeneous size (long-tail phenomenon) and their size directly depends on the size of the collection! Hence the simplicity of the current queues does not allow a "true" scalability. To fix this, one would check the size of each posting list before loading it in memory and would express the capacity of the queues as an amount of bytes. This approach works until even a single posting list is too big to fit in memory.
 
 Currently the `positions` map allows an easy computation of the size of posting lists. However, implementing the size checking in Python's queues would require extra work that is out of the scope of the exercise (from the author's humble opinion).
+
+#### Some minor improvements
+
+##### Forward vs. Inverted
+
+As pointed at by [Google's first article](http://infolab.stanford.edu/pub/papers/google.pdf), the use of forward indexes (i.e. of the form `doc_id: [term_ids]`), each defined on a range of term ids, during the Parse step:
+
+* simplifies the work during the Merge step: forward indexes can be inverted one-by-one which creates a split version of the final, inverted index
+* is way simpler for a distributed index construction: each forward index can be inverted with no need of network communication
+
+Hence switching to intermediary forward indexes would be a necessity if this engine was to grow.
+
+##### I don't remember this one
+
+Oops.
 
 ***
 
@@ -172,7 +187,7 @@ A better approach makes use of Python's `struct` module to directly write bytes 
 
 The `Ratio` line of the table shows that the index size grows 3 times faster than the collection size. Assuming this growth is linear in the size of the working collection, the ratio will be equal to one for a collection of approx. 1.7GB..
 
-To further improve the compression, one would implement Variable Byte Encoding (though it cannot be used on floats...).
+To further improve the compression, one would implement Variable Byte Encoding (though it cannot be used on floats, right?).
 
 ### Requests performance
 
