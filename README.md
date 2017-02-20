@@ -134,18 +134,22 @@ In this section we will discuss:
 
 ### Index Construction
 
-The duration of each step of the index construction is displayed below for both test collections:
+The duration of the index construction was measured on 10 builds for both collections. The weight method used was the Evolutionary Learned Scheme which gave the best results during the [Engine Evaluation](#engine-evaluation). It is also the most expensive method in terms of calculation: we choose the method for which the construction lasts the most.
+
+The results after average are displayed below:
 
 | Steps | CACM  | CS276 |
 | --- | --- | --- |
-| Parse (s)   | 0.9  | 74   |
-| Merge (s)   | 0.8  | 105   |
-| **Total (s)** | 1.7  | 179  |
+| Parse (s)   | 1.0  | 79.3   |
+| Merge (s)   | 0.5  | 81.1   |
+| **Total (s)** | 1.5  | 160.4  |
 
-The steps are quite equivalent in complexity for both use expensive operations: 
+When looking at CS276, the steps are equivalent in complexity for both use expensive operations: 
 
 * the stemming in the Parse step
 * the weights computations in the Merge step (expensive mathematical operations)
+
+However, when looking at CACM, it seems that the first step is the longest. This can be explained by the fact that during the merge with a multi-blocks collection, part of the time is spent waiting for reading queues to fill. Hence the difference of time between the CACM (mono-block) and CS276 (10 blocks) parse steps.
 
 ### Index size
 
@@ -181,7 +185,7 @@ Hence at a new request:
 
 **TODO:** measure request times.
 
-### Engine evaluation on requests set
+### Engine evaluation
 
 The test set was composed of:
 * 64 raw queries (including non-alphanumerical characters and common words)
@@ -217,7 +221,7 @@ This plot sums up the results of the engine evaluation:
 
 ![Results](./img/results_riw.png)
 
-One function behaves better than the others with a MAP of 0.533: the Evolutionary Learned Scheme (#7). However this weight needs an extra statistic to be computed, hence building the index lasts ~ 12% longer when using it.
+One function behaves better than the others with a MAP of 0.533: the Evolutionary Learned Scheme (#7). However this weight needs an extra statistic to be computed, hence building the index lasts ~ 10% longer than with other weights.
 
 ## Appendix
 
