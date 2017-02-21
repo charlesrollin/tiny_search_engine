@@ -237,7 +237,29 @@ Hence at a new request:
 * the position of each unique term is retrieved
 * the index file is only opened once
 
-**TODO:** measure request times.
+#### Some response times
+
+The response time for a query depends on 2 parameters: 
+* the amount `n` of unique terms in the query: for each unique term, there is a posting list to retrieve from the index and to process
+* the length of each posting list
+If we define `l` as the average length of a posting list, the time complexity of the evaluation of a query of size `n` is in `O(n*l)`.
+
+| Query | # unique terms | # documents retrieved | Response time (ms) |
+| --- | --- | --- | --- |
+| sparta | 1 | 6 | 0 (!) |
+| dichotomy | 1 | 20 | 1 |
+| stanford | 1 | 71202 | 141 |
+| stanford stanford stanford | 1 | 71202 | 142 |
+| Is beer allowed in Stanford? | 3 | 72305 | 140 |
+| Do I need to study mathematics in university to implement a search engine program? | 8 | 74159 | 207 |
+| Do Stanford university teachers have more Nobel prizes / Field medals in mathematics, physics or biology? | 10 | 76408 | 183 |
+| Do I need to study mathematics in Stanford university to implement a search engine program? | 9 | 81585 | 226 |
+| Do I need to study mathematics and computer science in Stanford university to implement a good search engine program? | 12 | 82990 | 253 |
+| Are stanford students really THAT good in computer science? | 7 | 83244 | 208 |
+
+The amount of unique terms in queries does not fluctuate as much as the length of posting lists, as we can see in the above table. For instance, the term `stanford` is met in more than 70% of the documents of the collection. 
+
+If `stanford` is also a frequently queried term, its posting list should be added in the cache system (if this engine had one).
 
 ### Engine evaluation
 
