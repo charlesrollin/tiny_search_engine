@@ -31,12 +31,25 @@ class MergePrinter(ConsolePrinter):
 
 class QueryParserPrinter(ConsolePrinter):
 
-    def print_results(self, sub_results, total_results, time):
+    def print_results(self, results, time):
+        counter = 0
         if self.verbose:
-            print("%i documents found in %.2f seconds" % (total_results, time))
-            print("Printing first %i documents" % len(sub_results))
-            for doc in sub_results:
-                print("\t%.5f: %s" % (doc[1], doc[0]))
+            print("%i documents found in %.3f seconds" % (len(results), time))
+            while counter * 10 < len(results):
+                print("Printing result page [%i/%i]" % (counter+1, len(results)//10 + (1 if len(results) % 10 != 0 else 0)))
+                for i, doc in enumerate(results[10*counter:min(10*(counter+1), len(results))]):
+                    print("\t%i. [%.5f]: %s" % (10*counter + i+1, doc[1], doc[0]))
+                counter += 1
+                if counter * 10 < len(results):
+                    go_next = '?'
+                    while len(go_next) == 0 or go_next[0] not in ['y', 'n']:
+                        go_next = input("Go to next page? (y/n) ")
+                        if len(go_next) > 0 and go_next[0] == "n":
+                            print()
+                            return
+                else:
+                    print("End of results.")
+            print()
 
 
 class TestPrinter(ConsolePrinter):
