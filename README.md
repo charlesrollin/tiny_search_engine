@@ -12,6 +12,9 @@ Information Retrieval project for class IS3013AA
     + **[Index Size](#index-size)**
     + **[Requests Performance](#requests-performance)**
     + **[Engine Evaluation](#engine-evaluation)**
++ **[Appendix](#appendix)**
+
+***
 
 ## Usage Instructions
 
@@ -49,6 +52,20 @@ optional arguments:
 
 ***
 
+### Table of Contents
++ **[Usage Instructions](#usage-instructions)**  
++ **Architecture**  
+    + **[Global Architecture](#global-architecture)**
+    + **[Limitations](#limitations)**
++ **[Performances](#performances)**
+    + **[Index Construction](#index-construction)**
+    + **[Index Size](#index-size)**
+    + **[Requests Performance](#requests-performance)**
+    + **[Engine Evaluation](#engine-evaluation)**
++ **[Appendix](#appendix)**
+
+***
+
 ## Architecture
 
 ### Global architecture
@@ -69,11 +86,13 @@ The Parse step is a simulation of a distributed operation. Therefore it is multi
 
 The Merge step is a many-producers/one-consumer process. It merges all the block indexes built during the previous step. Because it writes the index sequentially, the Merger can store the position of each posting list within the file. The map produced will be used when querying the engine.
 
+[Appendix A](#appendix-a-merge-step--concurrent-programming) details how the `Merger` interacts with its read queues.
+
 #### Querying
 
 Two types of queries are supported:
 
-+ Boolean queries of the form: `(foo || bar) && !(foobar)` (see Appendix D for details and explanations)
++ Boolean queries of the form: `(foo || bar) && !(foobar)` (see [Appendix D](#appendix-d-boolean-queries) for details and explanations)
 + Vector queries of the form: `foo bar foobar`
 
 Below is the class diagram for the Queries Package:
@@ -115,7 +134,7 @@ Such a solution makes the whole system scalable but has an impact on performance
 
 #### IO Buffers
 
-During the construction of the index, this engine uses simple read/write queues. To represent the memory limitations of the system, these queues have a limited capacty, expressed as an amount of lines.
+During the construction of the index, this engine uses simple read/write queues. To represent the memory limitations of the system, these queues have a limited capacity, expressed as an amount of lines.
 The default limitation is set to 2200 lines (empirically chosen), which means we assume no more than 2200 posting lists can fit in-memory.
 
 However, posting lists do not have an homogeneous size (long-tail phenomenon) and their size directly depends on the size of the collection! Hence the simplicity of the current queues does not allow a "true" scalability. To fix this, one would check the size of each posting list before loading it in memory and would express the capacity of the queues as an amount of bytes. This approach works until even a single posting list is too big to fit in memory.
@@ -126,23 +145,43 @@ Currently the `positions` map allows an easy computation of the size of posting 
 
 ##### Forward vs. Inverted
 
-As pointed at by [Google's first article](http://infolab.stanford.edu/pub/papers/google.pdf), the use of forward indexes (i.e. of the form `doc_id: [term_ids]`), each defined on a range of term ids, during the Parse step:
+As pointed out by [Google's first article](http://infolab.stanford.edu/pub/papers/google.pdf) of 1998, the use of forward indexes (i.e. of the form `doc_id: [term_ids]`), each defined on a range of term ids, during the Parse step:
 
 * simplifies the work during the Merge step: forward indexes can be inverted one-by-one which creates a split version of the final, inverted index
 * is way simpler for a distributed index construction: each forward index can be inverted with no need of network communication
 
-Hence switching to intermediary forward indexes would be a necessity if this engine was to grow.
+Hence switching to intermediary forward indexes would be interesting if this engine was to grow.
 
-##### I don't remember this one
+##### When to compute the weights
 
-Oops.
+The current engine computes weights during the construction of the index. This choice has good pros but even worst cons:
+* **Pros:** because all the weights are computed before any query, the response time of the engine is pretty low. Plus we don't have to manage a complex cache system to avoid recomputing the same weights at each query.
+* **Cons:** the only way to enforce a modification of the weight method is to rebuild the index
+
+Due to the small size of the working collections, it seems more appropriate (and not too disabling) to compute the weights at the construction.
+
+If this engine was to grow, and if the optimization of the weight methods was done empirically (which would imply many adjustments), computing weights on the fly would become more interesting.
+
+***
+
+### Table of Contents
++ **[Usage Instructions](#usage-instructions)**  
++ **[Architecture](#architecture)**  
+    + **[Global Architecture](#global-architecture)**
+    + **[Limitations](#limitations)**
++ **Performances**
+    + **[Index Construction](#index-construction)**
+    + **[Index Size](#index-size)**
+    + **[Requests Performance](#requests-performance)**
+    + **[Engine Evaluation](#engine-evaluation)**
++ **[Appendix](#appendix)**
 
 ***
 
 ## Performances
 
 In this section we will discuss:
-* Index construction speed & memory performances
+* Index construction speed performances
 * Index size
 * Requests speed & IO performances
 * Engine evaluation on test set
@@ -164,7 +203,7 @@ When looking at CS276, the steps are equivalent in complexity for both use expen
 * the stemming in the Parse step
 * the weights computations in the Merge step (expensive mathematical operations)
 
-However, when looking at CACM, it seems that the first step is the longest. This can be explained by the fact that during the merge with a multi-blocks collection, part of the time is spent waiting for reading queues to fill. Hence the difference of time between the CACM (mono-block) and CS276 (10 blocks) parse steps.
+However, when looking at CACM, it seems that the first step is the longest. This can be explained by the fact that during the merge with a multi-blocks collection, part of the time is spent waiting for read queues to fill. Hence the difference of time between the CACM (mono-block) and CS276 (10 blocks) parse steps.
 
 ### Index size
 
@@ -172,9 +211,9 @@ In a first approach, the index was stored as a string:
 ```bash
 term_id:doc_id, freq, weight|doc_id, freq, weight| ... |doc_id, freq, weight
 ```
-This resulted in an index of more than 300MB for the cs276 collection!
+This resulted in an index of more than 300MB for the CS276 collection!
 
-A better approach makes use of Python's `struct` module to directly write bytes in the index file (see Appendix C for details). The size of each elements is shown below for both collections:
+A better approach makes use of Python's `struct` module to directly write bytes in the index file (see [Appendix C](#appendix-c-compressing-the-index-with-struct) for details). The size of each elements is shown below for both collections:
 
 | Items | CACM | CS276 |
 | --- | --- | --- |
@@ -185,7 +224,7 @@ A better approach makes use of Python's `struct` module to directly write bytes 
 | **Total (MB)** | 1.0 | 102.1 |
 | **Ratio (%)** | 7.6 | 23.7 |
 
-The `Ratio` line of the table shows that the index size grows 3 times faster than the collection size. Assuming this growth is linear in the size of the working collection, the ratio will be equal to one for a collection of approx. 1.7GB..
+The `Ratio` line of the table shows that the index size grows 3 times faster than the collection size. Assuming this growth is linear in the size of the working collection, the ratio will be equal to one for a collection of approx. 1.7GB.
 
 To further improve the compression, one would implement Variable Byte Encoding (though it cannot be used on floats, right?).
 
@@ -237,6 +276,22 @@ This plot sums up the results of the engine evaluation:
 ![Results](./img/results_riw.png)
 
 One function behaves better than the others with a MAP of 0.533: the Evolutionary Learned Scheme (#7). However this weight needs an extra statistic to be computed, hence building the index lasts ~ 10% longer than with other weights.
+
+***
+
+### Table of Contents
++ **[Usage Instructions](#usage-instructions)**  
++ **[Architecture](#architecture)**  
+    + **[Global Architecture](#global-architecture)**
+    + **[Limitations](#limitations)**
++ **[Performances](#performances)**
+    + **[Index Construction](#index-construction)**
+    + **[Index Size](#index-size)**
+    + **[Requests Performance](#requests-performance)**
+    + **[Engine Evaluation](#engine-evaluation)**
++ **Appendix**
+
+***
 
 ## Appendix
 
