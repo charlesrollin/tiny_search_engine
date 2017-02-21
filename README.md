@@ -74,8 +74,8 @@ optional arguments:
 
 The construction of the inverted index implements the BSBI algorithm. It follows 2 steps:
 * Parse: build a simple inverted index for each "block" of the collection and collect statistics. Additionally the data is cleaned:
-    * Porter2 stemming (using the `PorterStemmer` package)
     * Removal of common words (using the `common_words` file provided during the class)
+    * Porter2 stemming (using the `PorterStemmer` package)
 * Merge: merge the block indexes and use the statistics to refine the posting lists with weights
 
 Below is the class diagram for the Index Construction Package:
