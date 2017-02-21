@@ -1,5 +1,7 @@
 import operator
 
+import time
+
 import re
 
 from queries.abstract_queries import AbstractQueryParser
@@ -16,6 +18,7 @@ class VectorQueryParser(AbstractQueryParser):
         return result
 
     def execute_query(self, query):
+        start = time.time()
         score = dict()
         freqs = dict()
         query = self._clean_query(query)
@@ -30,5 +33,5 @@ class VectorQueryParser(AbstractQueryParser):
                 score[doc_id] = score.get(doc_id, 0) + weight * freqs[term_id]
         results = sorted(score.items(), key=operator.itemgetter(1), reverse=True)
         self.printer.print_results([(self.collection.id_storer.doc_map[d_id], score) for d_id, score in results[:10]],
-                                   len(results))
+                                   len(results), time.time() - start)
         return [self.collection.id_storer.doc_map[result[0]] for result in results]

@@ -29,23 +29,12 @@ class MergePrinter(ConsolePrinter):
         self._validate_print("Merging ended: %i unique terms found" % counter)
 
 
-class RefinePrinter(ConsolePrinter):
-
-    def print_refine_start_message(self):
-        self._validate_print("Refining index")
-
-    def print_refine_progress_message(self, counter):
-        self._validate_print("\t%i terms refined" % counter)
-
-    def print_end_of_refine_message(self):
-        self._validate_print("Refine ended")
-
-
 class QueryParserPrinter(ConsolePrinter):
 
-    def print_results(self, sub_results, total_results):
+    def print_results(self, sub_results, total_results, time):
         if self.verbose:
-            print("Printing first %i documents out of %i" % (len(sub_results), total_results))
+            print("%i documents found in %.2f seconds" % (total_results, time))
+            print("Printing first %i documents" % len(sub_results))
             for doc in sub_results:
                 print("\t%.5f: %s" % (doc[1], doc[0]))
 
