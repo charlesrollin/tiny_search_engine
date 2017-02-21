@@ -1,3 +1,4 @@
+import struct
 from os.path import dirname, exists
 from os import makedirs
 
@@ -24,28 +25,30 @@ def save_map(m_map, file_path):
             map_file.write("%s : %s\n" % (key, m_map[key]))
 
 
-def term_indexes_to_file_lines(term_indexes):
-    return [term_index_to_file_line(term_index) for term_index in term_indexes]
+def load_positions(positions_path):
+    result = list()
+    with open(positions_path) as positions_file:
+        for line in positions_file:
+            result.append(int(line))
+    return result
 
 
-def term_index_to_file_line(term_index):
-    term_id, occurrences = term_index
-    result = "%s:" % term_id
-    for occurrence in occurrences:
-        result += "%s|" % str(occurrence)[1:-1]
-    return result[:-1] + "\n"
+def save_positions(positions, file_path):
+    with open(file_path, 'w') as positions_file:
+        for position in positions:
+            positions_file.write("%i\n" % position)
 
 
-def file_lines_to_term_indexes(lines):
-    return [file_line_to_term_index(line) for line in lines]
+def term_index_to_bin(term_index, refined=False):
+    bin_format = 'if' if refined else '2i'
+    result = struct.pack('i', term_index[0])
+    for posting in term_index[1]:
+        result += struct.pack(bin_format, *posting)
+    return result
 
 
-def file_line_to_term_index(line, refined=False):
-    temp = line[:-1].split(':')
-    term_id = int(temp[0])
-    str_occurrences = temp[1].split('|')
-    occurrences = list()
-    for str_occurrence in str_occurrences:
-        temp = str_occurrence.split(',')
-        occurrences.append((int(temp[0]), int(temp[1]), float(temp[2])) if refined else (int(temp[0]), int(temp[1])))
+def bin_to_term_index(raw_bin, refined=False):
+    bin_format = 'if' if refined else '2i'
+    term_id = struct.unpack_from('i', raw_bin)[0]
+    occurrences = list(struct.iter_unpack(bin_format, raw_bin[4:]))
     return term_id, occurrences

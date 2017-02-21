@@ -29,25 +29,27 @@ class MergePrinter(ConsolePrinter):
         self._validate_print("Merging ended: %i unique terms found" % counter)
 
 
-class RefinePrinter(ConsolePrinter):
-
-    def print_refine_start_message(self):
-        self._validate_print("Refining index")
-
-    def print_refine_progress_message(self, counter):
-        self._validate_print("\t%i terms refined" % counter)
-
-    def print_end_of_refine_message(self):
-        self._validate_print("Refine ended")
-
-
 class QueryParserPrinter(ConsolePrinter):
 
-    def print_results(self, sub_results, total_results):
+    def print_results(self, results, time):
+        counter = 0
         if self.verbose:
-            print("Printing first %i documents out of %i" % (len(sub_results), total_results))
-            for doc in sub_results:
-                print("\t%.5f: %s" % (doc[1], doc[0]))
+            print("%i documents found in %.3f seconds" % (len(results), time))
+            while counter * 10 < len(results):
+                print("Printing result page [%i/%i]" % (counter+1, len(results)//10 + (1 if len(results) % 10 != 0 else 0)))
+                for i, doc in enumerate(results[10*counter:min(10*(counter+1), len(results))]):
+                    print("\t%i. [%.5f]: %s" % (10*counter + i+1, doc[1], doc[0]))
+                counter += 1
+                if counter * 10 < len(results):
+                    go_next = '?'
+                    while len(go_next) == 0 or go_next[0] not in ['y', 'n']:
+                        go_next = input("Go to next page? (y/n) ")
+                        if len(go_next) > 0 and go_next[0] == "n":
+                            print()
+                            return
+                else:
+                    print("End of results.")
+            print()
 
 
 class TestPrinter(ConsolePrinter):

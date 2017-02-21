@@ -1,6 +1,7 @@
+from _operator import itemgetter
 from threading import Thread, Lock
 
-from utils import make_dirs
+from index_construction.index_IO import SequentialIndexWriter
 
 from printer import ParsePrinter
 from porterstemmer import Stemmer
@@ -14,13 +15,15 @@ class AbstractParseManager(object):
         self.lock = Lock()
         self.stats = stats
         self._ended_threads = 0
+        self.block_positions = dict()
 
     def parse(self, collection):
         """Start BlockParser workers on each block of the collection."""
         self.printer.print_block_parse_start_message(len(collection.blocks))
 
-    def signal_job_done(self):
+    def signal_job_done(self, block_path, positions):
         with self.lock:
+            self.block_positions[block_path] = positions
             self._ended_threads += 1
             self.printer.print_block_parse_end_message(self._ended_threads)
 
@@ -74,19 +77,11 @@ class AbstractBlockParser(Thread):
                 reversed_index[term_id] = occurrence_list
         for posting_list in reversed_index.values():
             self.manager.stats.process_posting_list(posting_list)
-        self._write_block_index("indexes/" + block.block_path, reversed_index)
-        self.manager.signal_job_done()
-
-    def _write_block_index(self, file_path, block_index):
-        lines_to_write = list()
-        for term_id in sorted(block_index):
-            result = "%s:" % term_id
-            for occurrence in block_index[term_id]:
-                result += "%s,%s|" % occurrence
-            lines_to_write.append(result[:-1] + "\n")
-        make_dirs(file_path)
-        with open(file_path, "w") as block_index_file:
-            block_index_file.writelines(lines_to_write)
+        writer = SequentialIndexWriter("indexes/" + block.block_path, len(reversed_index))
+        for term_index in sorted(reversed_index.items(), key=itemgetter(0)):
+            writer.append(term_index)
+        writer.close()
+        self.manager.signal_job_done(self.block.block_path, writer.positions)
 
 
 class DefaultBlockParser(AbstractBlockParser):

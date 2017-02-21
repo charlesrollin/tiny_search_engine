@@ -2,18 +2,24 @@ from os import remove
 
 from index_construction.index_IO import SequentialIndexWriter, SequentialIndexReader
 from printer import MergePrinter
-from utils import save_map
+from utils import save_positions
 
 
 class BlockIndexMerger(object):
 
-    def __init__(self, collection, weighter, total_capacity, verbose):
+    def __init__(self, collection, block_positions, weighter, total_capacity, verbose):
         self._collection = collection
         self._readers = list()
         self._capacity = total_capacity / (len(collection.blocks) + 1)
         for block in collection.blocks:
-            self._readers.append(SequentialIndexReader("indexes/" + block.block_path, self._capacity))
-        self._writer = SequentialIndexWriter("indexes/" + self._collection.collection_path + ".index", self._capacity, refined=True)
+            self._readers.append(SequentialIndexReader("indexes/" + block.block_path,
+                                                       block_positions[block.block_path], self._capacity))
+        for reader in self._readers:
+            reader.start()
+        for reader in self._readers:
+            reader.wait_for_readiness()  # makes sure the head of each read queue is correctly initiated
+        self._writer = SequentialIndexWriter("indexes/" + self._collection.collection_path + ".index", self._capacity,
+                                             refined=True)
         self.weighter = weighter
         self.printer = MergePrinter(verbose)
 
@@ -37,10 +43,10 @@ class BlockIndexMerger(object):
         term_id, posting_list = index_line
         if self.weighter.weight_function_id == 6:
             cf = sum([f for d_id, f in posting_list])
-            new_posting_list = [(doc, freq, self.weighter.weight(doc, freq, len(posting_list), cf))
+            new_posting_list = [(doc, self.weighter.weight(doc, freq, len(posting_list), cf))
                                 for doc, freq in posting_list]
         else:
-            new_posting_list = [(doc, freq, self.weighter.weight(doc, freq, len(posting_list)))
+            new_posting_list = [(doc, self.weighter.weight(doc, freq, len(posting_list)))
                                 for doc, freq in posting_list]
         # self.n_d[doc_id] = self.n_d.get(doc_id, 0) + temp_weight*temp_weight
         # / ! \ Nd not computed any more!
@@ -50,17 +56,23 @@ class BlockIndexMerger(object):
         self.printer.print_merge_start_message()
         counter = 0
         last_term = self._get_lexically_first()
+        postings_counter = len(last_term[1])
         while last_term is not None:
             next_term = self._get_lexically_first()
             if next_term is not None and last_term[0] == next_term[0]:
+                postings_counter += len(next_term[1])
                 last_term = last_term[0], (last_term[1] + next_term[1])
             else:
+                if postings_counter != len(last_term[1]):
+                    raise ValueError("Postings were lost")
                 self._writer.append((last_term[0], self.refine_line(last_term)))
                 counter += 1
                 last_term = next_term
+                if last_term is not None:
+                    postings_counter = len(last_term[1])
                 if counter % 25000 == 0:
                     self.printer.print_merge_progress_message(counter)
         self.printer.print_end_of_merge_message(counter)
         self._end()
-        save_map(self._writer.positions, "indexes/" + self._collection.collection_path + "/positions")
+        save_positions(self._writer.positions, "indexes/" + self._collection.collection_path + "/positions")
         return self._writer.positions
