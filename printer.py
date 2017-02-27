@@ -34,7 +34,7 @@ class QueryParserPrinter(ConsolePrinter):
     def print_results(self, results, time):
         counter = 0
         if self.verbose:
-            print("%i documents found in %.3f seconds" % (len(results), time))
+            print("%i document%s found in %.3f seconds" % (len(results), "s" if len(results) > 1 else "", time))
             while counter * 10 < len(results):
                 print("Printing result page [%i/%i]" % (counter+1, len(results)//10 + (1 if len(results) % 10 != 0 else 0)))
                 for i, doc in enumerate(results[10*counter:min(10*(counter+1), len(results))]):
@@ -50,6 +50,22 @@ class QueryParserPrinter(ConsolePrinter):
                 else:
                     print("End of results.")
             print()
+
+    def print_query_constraints(self):
+        message = "**********" \
+                  "\nBoolean queries must respect the following structure:" \
+                  "\n\t- the query is written in CNF, i.e. a conjunction of disjunctions " \
+                  "\n\t- disjunctions are separated with the && (AND) operator " \
+                  "\n\t- a disjunction is a list of terms separated with the || (OR) operator and surrounded with parenthesis " \
+                  "Two extra rules ensure that queries are well-defined: " \
+                  "\n\t- the NOT operator can only apply to a disjunction (and not to a term) " \
+                  "\n\t\t--> (foobar) && !(foo || bar) is well-defined " \
+                  "\n\t\t--> (foobar) && (!foo || bar) is not (cf. end of doc) " \
+                  "\n\t- the query must contain at least one not-negated disjunction " \
+                  "\n\t\t--> (foobar) && !(foo || bar) is well-defined " \
+                  "\n\t\t--> !(foo || bar) is not (cf. end of doc)" \
+                  "\n**********"
+        self._validate_print(message)
 
 
 class TestPrinter(ConsolePrinter):

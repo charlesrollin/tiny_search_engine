@@ -27,6 +27,10 @@ class BooleanQueryParser(AbstractQueryParser):
     Hence the two rules described above.
     """
 
+    def __init__(self, collection, index_path, positions, verbose):
+        AbstractQueryParser.__init__(self, collection, index_path, positions, verbose)
+        self.printer.print_query_constraints()
+
     def execute_query(self, query):
         # type: (str) -> list
         """
