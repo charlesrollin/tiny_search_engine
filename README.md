@@ -47,6 +47,7 @@ Collection folders must be added at the root of this repo and respect the struct
 |   |-- 1
 |   |   |-- document_1_1
 |   |   |...
+|   |...
 ```
 
 Each subfolder `0/`, `1/` etc., will represent a "block", i.e. a subset, of the collection.
@@ -158,6 +159,7 @@ Below is the class diagram for the Queries Package:
 The inverted index file is accessed through the Collection Index Reader. The Reader uses the map that was produced during the construction of the index to retrieve posting lists. Hence getting the list of potentially relevant documents on a query is a O(1)(-ish) operation.
 
 No Top-k algorithm was implemented in this exercise: the result list is sorted using the python built-in `sorted`. Hence time complexity is in `O(n.log(n))` (vs. `O(n.log(k))`). This can be an issue if a query has too many results.
+
 An improvement would be to run a Top-k algorithm (using Python's `heapq` module), display the sub-results and run a background sort on the remaining documents.
 
 #### Evaluation
@@ -242,6 +244,8 @@ In this section we will discuss:
 * Requests speed & IO performances
 * Engine evaluation on test set
 
+The tests discussed below were done on a 2015 MacBook Pro with a 2.7GHz Intel "Core i5" (5257U) processor, 8GB of RAM and a SSD storage.
+
 ### Index Construction
 
 The duration of the index construction was measured on 10 builds for both collections. The weight method used was the Evolutionary Learned Scheme which gave the best results during the [Engine Evaluation](#engine-evaluation). It is also the most expensive method in terms of calculation: we choose the method for which the construction lasts the most.
@@ -297,7 +301,7 @@ Hence at a new request:
 
 The response time for a query depends on 2 parameters: 
 * the amount `n` of unique terms in the query: for each unique term, there is a posting list to retrieve from the index and to process
-* the length of each posting list
+* the length of each posting list 
 If we define `l` as the average length of a posting list, the time complexity of the evaluation of a query of size `n` is in `O(n*l)`.
 
 | Query | # unique terms | # documents retrieved | Response time (ms) |
@@ -382,7 +386,7 @@ However, the very notion of `peek` is contradictory with concurrent programming:
 
 The workaround used was to add a `head` element to each `Reader`. As a consequence:
 * `peek` only looks at the value of the `head` element
-* `pop` gets `head` then updates it by popping the `Reader`'s queue
+* `pop` gets `head` then updates it by popping the `Reader`'s tail
 
 ![Merge queues](./img/merge_queues.png)
 
