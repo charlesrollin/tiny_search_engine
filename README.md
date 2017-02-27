@@ -468,6 +468,8 @@ Hence the first size of a posting was `4 + 5*4` which has been decreased to `4 +
 
 ### Appendix D: Boolean Queries
 
+#### Constraints & Format
+
 Boolean queries must respect the following structure:
 * the query is written in CNF, i.e. a conjunction of disjunctions
 * disjunctions are separated with the && (AND) operator and potentially preceded by the ! (NOT) operator
@@ -482,3 +484,21 @@ Two extra rules ensure that queries are well-defined:
     * `!(foo || bar)` is not
     
 These extra rules rely on the assumption that the main use-case of the NOT operator is to filter an existing query, but not to get the complement of a query.
+
+#### Implementation remarks
+
+##### Manipulations on sets of tuples
+
+Because the `BooleanQueryParser` handles tuples of `(doc_id, score)`, we cannot use standard `set` operations in Python.
+
+Hence the homemade `diff`, `union` and `intersection` methods in `boolean_queries.py`.
+
+##### Boolean model == Vector model?
+
+The boolean model was the first one implemented. The vector model (and the weight calculations and statistics) was implemented later. Because it is closer to the "classic" use of a search engine part of the code that was originally shared by the two models was changed in favor of the Vector model.
+
+Hence, the current version of the engine computes weights **even** in boolean mode... Which means that: 
+* **pro**: even in boolean mode, the sorted results are quite good!
+* **con**: the boolean mode has become a version of the vector mode with extra query features (exclusion of terms, etc.)
+
+So is it still considered as a Boolean Model? :thinking-face:
