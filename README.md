@@ -18,6 +18,19 @@ Information Retrieval project for class IS3013AA
 
 ## Usage Instructions
 
+**Note:** the aliases used for `python3` and `pip3` in this document may vary from one computer to another.
+
+### Requirements
+
+* Python (3.5)
+* matplotlib (2.0.0)
+* PorterStemmer (0.5)
+
+Run the script below to download the requirements with `pip`:
+```bash
+pip3 install -r requirements.txt
+```
+
 ### Build the collection folders
 
 This engine supports 2 collections: `cacm` and `CS276`. In order to limit its size, collections are not included in this repo.
@@ -59,13 +72,14 @@ After these steps, you will have a 10-blocks collection folder for CS276.
 ### Starting the engine
 
 ```bash
-python3 main.py [-h] [-w WEIGHT] [-e] collection
+usage: main.py [-h] [-b] [-w WEIGHT] [-e] [-m MEMORY] collection
 
 positional arguments:
   collection            the collection to analyse, 'cs276' or 'cacm'
 
 optional arguments:
   -h, --help            show this help message and exit
+  -b, --boolean         add this flag to do boolean requests
   -w WEIGHT, --weight WEIGHT
                         0: TfIdf
                         1: NormalizedTfIdf
@@ -82,8 +96,10 @@ optional arguments:
 ```
 
 <dl>
-    <dt>Build index and start engine</dt>
+    <dt>Build index and start vector model engine</dt>
     <dd><code>python3 main.py {cacm or cs276} -w {0 .. 8}</code></dd>
+    <dt>Build index and start boolean model engine</dt>
+    <dd><code>python3 main.py {cacm or cs276} -b -w {0 .. 8}</code></dd>
     <dt>Start engine with last index</dt>
     <dd><code>python3 main.py {cacm or cs276}</code> (raises an error if there is no last index)</dd>
     <dt>Start engine evaluation</dt>
