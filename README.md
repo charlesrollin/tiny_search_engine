@@ -18,7 +18,7 @@ Information Retrieval project for class IS3013AA
 
 ## Usage Instructions
 
-**Note:** the aliases used for `python3` and `pip3` in this document may vary from one computer to another.
+**Note:** the `python3` and `pip3` aliases used in this document depend on your configuration and thus may vary from one computer to another.
 
 ### Requirements
 
@@ -31,7 +31,7 @@ Run the script below to download the requirements with `pip`:
 pip3 install -r requirements.txt
 ```
 
-### Build the collection folders
+### Building the collection folders
 
 This engine supports 2 collections: `cacm` and `CS276`. In order to limit its size, collections are not included in this repo.
 
@@ -100,11 +100,11 @@ optional arguments:
     <dt>Build index and start vector model engine</dt>
     <dd><code>python3 main.py {cacm or cs276} -w {0 .. 8}</code></dd>
     <dt>Build index and start boolean model engine</dt>
-    <dd><code>python3 main.py {cacm or cs276} -b -w {0 .. 8}</code></dd>
+    <dd><code>python3 main.py {cacm or cs276} -w {0 .. 8} -b</code></dd>
     <dt>Start engine with last index</dt>
     <dd><code>python3 main.py {cacm or cs276}</code> (raises an error if there is no last index)</dd>
     <dt>Start engine evaluation</dt>
-    <dd><code>python3 main.py cacm -e</code> (evaluation only supported for cacm)</dd>
+    <dd><code>python3 main.py cacm -e</code> (only supported for cacm)</dd>
 </dl>
 
 ***
@@ -130,7 +130,7 @@ optional arguments:
 #### Index Construction
 
 The construction of the inverted index implements the BSBI algorithm. It follows 2 steps:
-* Parse: build a simple inverted index for each "block" of the collection and collect statistics. Additionally the data is cleaned:
+* Parse: build a sorted inverted index for each "block" of the collection and collect statistics. Additionally the data is cleaned:
     * Removal of common words (using the `common_words` file provided during the class)
     * Porter2 stemming (using the `PorterStemmer` package)
 * Merge: merge the block indexes and use the statistics to refine the posting lists with weights
@@ -141,7 +141,8 @@ Below is the class diagram for the Index Construction Package:
 
 The Parse step is a simulation of a distributed operation. Therefore it is multi-threaded(-ish because of [Python GLI](https://en.wikipedia.org/wiki/Global_interpreter_lock)). It outputs various statistics on the collection (e.g. average length of documents). These statistics will later be given to a Weighter object that will compute advanced weighting functions.
 
-The Merge step is a many-producers/one-consumer process. It merges all the block indexes built during the previous step. Because it writes the index sequentially, the Merger can store the position of each posting list within the file. The map produced will be used when querying the engine.
+The Merge step is a many-producers/one-consumer process. It merges all the block indexes built during the previous step. Because it writes the index sequentially, the Merger can store the position of each posting list within the file into a `dict`. 
+The map produced is a *dense index on the inverted index* and will be used when querying the engine.
 
 [Appendix A](#appendix-a-merge-step--concurrent-programming) details how the `Merger` interacts with its read queues.
 
@@ -156,7 +157,7 @@ Below is the class diagram for the Queries Package:
 
 ![Results](./img/queries.png)
 
-The inverted index file is accessed through the Collection Index Reader. The Reader uses the map that was produced during the construction of the index to retrieve posting lists. Hence getting the list of potentially relevant documents on a query is a O(1)(-ish) operation.
+The inverted index file is accessed through the Collection Index Reader. The Reader uses the dense index that was produced during the construction of the index to retrieve posting lists. Hence getting the list of potentially relevant documents on a query is a `O(1)(-ish)` operation.r
 
 No Top-k algorithm was implemented in this exercise: the result list is sorted using the python built-in `sorted`. Hence time complexity is in `O(n.log(n))` (vs. `O(n.log(k))`). This can be an issue if a query has too many results.
 
@@ -166,8 +167,11 @@ An improvement would be to run a Top-k algorithm (using Python's `heapq` module)
 
 The evaluation process runs 64 queries on each of the 9 weight methods selected:
 
-+ the Test Builder manages the whole process by creating an Evaluation Builder for each weight methods.
-+ each Evaluation Builder then computes an 11-points interpolated mean curve.
++ the Test Builder manages the whole process by creating an Evaluation Builder for each weight method.
++ each Evaluation Builder then: 
+    + runs the 64 queries, 
+    + builds an 11-points interpolated curve for each query, 
+    + averages the 64 curves into a unique mean curve
 + eventually, the Test Builder plots the results
 
 Below is the class diagram for the Evaluation Module:
@@ -195,18 +199,18 @@ Such a solution makes the whole system scalable but has an impact on performance
 During the construction of the index, this engine uses simple read/write queues. To represent the memory limitations of the system, these queues have a limited capacity, expressed as an amount of lines.
 The default limitation is set to 2200 lines (empirically chosen), which means we assume no more than 2200 posting lists can fit in-memory.
 
-However, posting lists do not have an homogeneous size (long-tail phenomenon) and their size directly depends on the size of the collection! Hence the simplicity of the current queues does not allow a "true" scalability. To fix this, one would check the size of each posting list before loading it in memory and would express the capacity of the queues as an amount of bytes. This approach works until even a single posting list is too big to fit in memory.
+However, posting lists do not have an homogeneous size (long-tail phenomenon) and their size directly depends on the size of the collection! Hence the simplicity of the current queues does not allow a "true" scalability. To fix this, one would check the size of each posting list before loading it in memory and would express the capacity of the queues as an amount of bytes. This approach works until even a single posting list is too big to fit in memory (which would force to load data posting-per-posting).
 
-Currently the `positions` map allows an easy computation of the size of posting lists. However, implementing the size checking in Python's queues would require extra work that is out of the scope of the exercise (from the author's humble opinion).
+Currently the `positions` map allows an easy computation of the size of posting lists. However, implementing the size checking in Python's queues (in a clean way) would require extra work that is out of the scope of the exercise (from the author's humble opinion).
 
 #### Some minor improvements
 
 ##### Forward vs. Inverted
 
-As pointed out by [Google's first article](http://infolab.stanford.edu/pub/papers/google.pdf) of 1998, the use of forward indexes (i.e. of the form `doc_id: [term_ids]`), each defined on a range of term ids, during the Parse step:
+As pointed out by [Google's first article](http://infolab.stanford.edu/pub/papers/google.pdf) of 1998, the use of forward indexes (instead of inverted indexes), each defined on a range of *term* ids, during the Parse step:
 
-* simplifies the work during the Merge step: forward indexes can be inverted one-by-one which creates a split version of the final, inverted index
-* is way simpler for a distributed index construction: each forward index can be inverted with no need of network communication
+* simplifies the work during the Merge step: forward indexes can be inverted one-by-one, in-place, which creates a split version of the final, inverted index (hence no need for reading queues on multiple block indexes)
+* is way simpler for a distributed index construction: each forward index can be inverted on the local machine, i.e. with no need of network communication
 
 Hence switching to intermediary forward indexes would be interesting if this engine was to grow.
 
@@ -286,12 +290,11 @@ A better approach makes use of Python's `struct` module to directly write bytes 
 
 The `Ratio` line of the table shows that the index size grows 3 times faster than the collection size. Assuming this growth is linear in the size of the working collection, the ratio will be equal to one for a collection of approx. 1.7GB.
 
-To further improve the compression, one would implement Variable Byte Encoding (though it cannot be used on floats, right?).
+To further improve the compression, one would implement Variable Byte Encoding (though it does not seem very effective on floats).
 
 ### Requests performance
 
-To improve the time performance of the requests, this search engine heavily relies on a `position` dictionary.
-It maps each term ID to a position in the index and allows a O(1)-ish retrieval of a posting list.
+To improve the time performance of the requests, this search engine heavily relies on the dense index on posting lists. It allows a `O(1)-ish` retrieval of a posting list.
 
 Hence at a new request:
 * the position of each unique term is retrieved
@@ -302,6 +305,7 @@ Hence at a new request:
 The response time for a query depends on 2 parameters: 
 * the amount `n` of unique terms in the query: for each unique term, there is a posting list to retrieve from the index and to process
 * the length of each posting list 
+
 If we define `l` as the average length of a posting list, the time complexity of the evaluation of a query of size `n` is in `O(n*l)`.
 
 | Query | # unique terms | # documents retrieved | Response time (ms) |
@@ -357,7 +361,9 @@ This plot sums up the results of the engine evaluation:
 
 ![Results](./img/results_riw.png)
 
-One function behaves better than the others with a MAP of 0.533: the Evolutionary Learned Scheme (#7). However this weight needs an extra statistic to be computed, hence building the index lasts ~ 10% longer than with other weights.
+One function behaves better than the others with a MAP of 0.533: the Evolutionary Learned Scheme (#7). 
+
+However this weight needs an extra statistic to be computed, hence building the index lasts ~ 10% longer than with other weights.
 
 ***
 
@@ -379,8 +385,8 @@ One function behaves better than the others with a MAP of 0.533: the Evolutionar
 
 ### Appendix A: Merge Step & Concurrent Programming
 
-The Merge step implements the final step of the BSBI algorithm. The `Block Index Merger` uses k `Sequential Index Reader` to read from k sorted block index files and writes to the final index file with a `Sequential Index Writer`. Each `Reader` is a read queue with the `pop` and `peek` methods.
-At each "round", the `Block Index Merger` must retrieve the element with the smallest id from its readers. Hence the use of the `peek` method.
+The Merge step implements the final step of the BSBI algorithm. The `BlockIndexMerger` uses `k` `SequentialIndexReader` to read from `k` sorted, block-index files and writes to the final index file with a `SequentialIndexWriter`. Each `Reader` is a read queue with `pop` and `peek` methods.
+At each "round", the `BlockIndexMerger` must retrieve the element with the smallest id from its readers. Hence the use of the `peek` method to identify the next queue to pop.
 
 However, the very notion of `peek` is contradictory with concurrent programming: why check the existence & value of an item if it is likely to be gone later? Hence Python's thread-safe queue does not implement a `peek` method.
 
@@ -462,7 +468,7 @@ To only read the necessary amount of bytes when retrieving a posting list, we ne
 
 #### Expected improvements
 
-In the first naive approach, a float was represented with 5 digits: a single string representation of a float was `5*4 = 20B`. 
+In the first approach, a float was represented with 5 digits: the size of its string representation was `5*4 = 20B`. 
 
 Hence the first size of a posting was `4 + 5*4` which has been decreased to `4 + 4`. This means that we can expect to divide the size of the index by 3. This matches the experimental results described in the Performances section.
 
@@ -501,4 +507,4 @@ Hence, the current version of the engine computes weights **even** in boolean mo
 * **pro**: even in boolean mode, the sorted results are quite good!
 * **con**: the boolean mode has become a version of the vector mode with extra query features (exclusion of terms, etc.)
 
-So is it still considered as a Boolean Model?
+So is it still considered a Boolean Model?
