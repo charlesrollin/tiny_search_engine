@@ -1,3 +1,7 @@
+import operator
+
+import time
+
 from queries.abstract_queries import AbstractQueryParser
 
 
@@ -29,9 +33,11 @@ class BooleanQueryParser(AbstractQueryParser):
         Execute a boolean query.
         :param query: a CNF query
         """
+        start = time.time()
         docs = self._evaluate_query(query)
-        self.printer.print_results([(self.collection.id_storer.doc_map[doc[0]], i) for i, doc in enumerate(docs[:10])],
-                                   len(docs))
+        results = sorted(docs, key=operator.itemgetter(1), reverse=True)
+        self.printer.print_results([(self.collection.id_storer.doc_map[doc[0]], doc[1]) for doc in results],
+                                   time.time() - start)
         return [self.collection.id_storer.doc_map[doc[0]] for doc in docs]
 
     def _get_word_from_disjunction(self, query):
@@ -63,8 +69,8 @@ class BooleanQueryParser(AbstractQueryParser):
         pos_disjunctions, neg_disjunctions = self._split_cnf_to_disjunctions(query)
         pos_ids_cnf = self._terms_cnf_to_ids_cnf(pos_disjunctions)
         neg_ids_cnf = self._terms_cnf_to_ids_cnf(neg_disjunctions)
-        pos_ids_cnf = [self._index_reader.read(term_ids).values() for term_ids in pos_ids_cnf]
-        neg_ids_cnf = [self._index_reader.read(term_ids).values() for term_ids in neg_ids_cnf]
+        pos_ids_cnf = [self._index_reader.read(term_ids, refined=True).values() for term_ids in pos_ids_cnf]
+        neg_ids_cnf = [self._index_reader.read(term_ids, refined=True).values() for term_ids in neg_ids_cnf]
         conjunction = Conjunction((pos_ids_cnf, neg_ids_cnf))
         return conjunction.evaluate()
 

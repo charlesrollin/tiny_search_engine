@@ -11,7 +11,7 @@ from queries.boolean_queries import BooleanQueryParser
 from queries.vector_queries import VectorQueryParser
 
 
-def run(collection_name, force_new_index, weight_function_id, start_evaluation, memory):
+def run(collection_name, force_new_index, weight_function_id, start_evaluation, memory, boolean):
     collection_path = collection_name + "-data"
     if start_evaluation:
         run_test(collection_path, "queries/query.text", "queries/qrels.text")
@@ -22,7 +22,8 @@ def run(collection_name, force_new_index, weight_function_id, start_evaluation, 
         else:
             c.id_storer.term_map = load_map("indexes/" + c.collection_path + "/termmap", value_type=int)
             positions = load_positions("indexes/" + c.collection_path + "/positions")
-        runner = VectorQueryParser(c, "indexes/%s.index" % c.collection_path, positions, verbose=True)
+        parser_builder = BooleanQueryParser if boolean else VectorQueryParser
+        runner = parser_builder(c, "indexes/%s.index" % c.collection_path, positions, verbose=True)
         while True:
                 runner.execute_query(input("Enter your query: "))
 
@@ -30,6 +31,7 @@ def run(collection_name, force_new_index, weight_function_id, start_evaluation, 
 if __name__ == '__main__':
     arg_parser = argparse.ArgumentParser(formatter_class=RawTextHelpFormatter)
     arg_parser.add_argument("collection", help="the collection to analyse, 'cs276' or 'cacm'")
+    arg_parser.add_argument('-b', '--boolean', help="add this flag to do boolean requests", action="store_true")
     help_str = "".join(["%i: %s\n" % (i, weighter.__name__) for i, weighter in enumerate(WeightFactory.weightClasses)])
     arg_parser.add_argument('-w', '--weight', default=None, type=int, help=textwrap.dedent(help_str))
     arg_parser.add_argument('-e', '--evaluate', help="add this flag to launch engine evaluation", action="store_true")
@@ -47,4 +49,4 @@ if __name__ == '__main__':
     if args.evaluate and args.collection == 'cs276':
         print("\tEngine evaluation is only supported for the cacm collection")
         exit(2)
-    run(args.collection, refresh, args.weight, args.evaluate, args.memory)
+    run(args.collection, refresh, args.weight, args.evaluate, args.memory, args.boolean)
