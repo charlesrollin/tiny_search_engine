@@ -321,7 +321,7 @@ If we define `l` as the average length of a posting list, the time complexity of
 | Do I need to study mathematics and computer science in Stanford university to implement a good search engine program? | 12 | 82990 | 253 |
 | Are stanford students really THAT good in computer science? | 7 | 83244 | 208 |
 
-The amount of unique terms in queries does not fluctuate as much as the length of posting lists, as we can see in the above table. For instance, the term `stanford` is met in more than 70% of the documents of the collection. 
+The amount of unique terms in queries does not fluctuate as much as the length of posting lists, as we can see in the above table. For instance, the term `stanford` is found in more than 70% of the documents of the collection. 
 
 If `stanford` is also a frequently queried term, its posting list should be added in the cache system (if this engine had one).
 
