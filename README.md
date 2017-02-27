@@ -355,6 +355,8 @@ Nine weight functions were tested:
 
 Except for the first 3, all these functions were taken from http://ir.dcs.gla.ac.uk/~ronanc/papers/cumminsChapter.pdf
 
+Document Normalization factors were all set to `1` for it gave better MAPs.
+
 #### Results
 
 This plot sums up the results of the engine evaluation:
