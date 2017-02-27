@@ -157,7 +157,7 @@ Below is the class diagram for the Queries Package:
 
 ![Results](./img/queries.png)
 
-The inverted index file is accessed through the Collection Index Reader. The Reader uses the dense index that was produced during the construction of the index to retrieve posting lists. Hence getting the list of potentially relevant documents on a query is a `O(1)(-ish)` operation.r
+The inverted index file is accessed through the Collection Index Reader. The Reader uses the dense index that was produced during the construction of the index to retrieve posting lists. Hence getting the list of potentially relevant documents on a query is a `O(1)(-ish)` operation.
 
 No Top-k algorithm was implemented in this exercise: the result list is sorted using the python built-in `sorted`. Hence time complexity is in `O(n.log(n))` (vs. `O(n.log(k))`). This can be an issue if a query has too many results.
 
@@ -242,13 +242,13 @@ If this engine was to grow, and if the optimization of the weight methods was do
 
 ## Performances
 
+*The tests discussed below were done on a 2015 MacBook Pro with a 2.7GHz Intel "Core i5" (5257U) processor, 8GB of RAM and a SSD storage.*
+
 In this section we will discuss:
 * Index construction speed performances
 * Index size
 * Requests speed & IO performances
 * Engine evaluation on test set
-
-The tests discussed below were done on a 2015 MacBook Pro with a 2.7GHz Intel "Core i5" (5257U) processor, 8GB of RAM and a SSD storage.
 
 ### Index Construction
 
