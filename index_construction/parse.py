@@ -71,7 +71,7 @@ class AbstractBlockParser(Thread):
                         doc_frequency_dict[stem_word] = doc_frequency_dict.get(stem_word, 0) + 1
             doc_frequency_dict = {w: v for w, v in doc_frequency_dict.items() if not self._cleaner.is_common_word(w)}
             for word in doc_frequency_dict.keys():
-                term_id = id_storer.term_map[word] if word in id_storer.term_map else id_storer.add_term(word)
+                term_id = id_storer.get_term_id(word)
                 occurrence_list = reversed_index.get(term_id, list())
                 occurrence_list.append((doc_id, doc_frequency_dict[word]))
                 reversed_index[term_id] = occurrence_list

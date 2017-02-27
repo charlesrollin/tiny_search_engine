@@ -72,3 +72,12 @@ class IDStorer(object):
             self._term_counter += 1
             self.term_map[term] = self._term_counter
             return self._term_counter
+
+    def get_term_id(self, term):
+        with self.lock:
+            if term in self.term_map:
+                return self.term_map[term]
+            self._term_counter += 1
+            self.term_map[term] = self._term_counter
+            return self._term_counter
+
