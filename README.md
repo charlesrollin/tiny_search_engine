@@ -68,6 +68,8 @@ The construction of the `cs276-data/` folder is **not** automated. To build it:
 * copy the `pa1-data` folder at the root of the project
 * rename it to `cs276-data`
 
+**Note:** copying the `pa1-data` folder directly from some IDEs interface may automatically create an `__init__.py` file. Because of how the collection blocks are detected, this extra file must be deleted before launching the engine.
+
 After these steps, you will have a 10-blocks collection folder for CS276.
 
 ### Starting the engine
