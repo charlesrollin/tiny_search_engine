@@ -501,4 +501,4 @@ Hence, the current version of the engine computes weights **even** in boolean mo
 * **pro**: even in boolean mode, the sorted results are quite good!
 * **con**: the boolean mode has become a version of the vector mode with extra query features (exclusion of terms, etc.)
 
-So is it still considered as a Boolean Model? :thinking-face:
+So is it still considered as a Boolean Model?
