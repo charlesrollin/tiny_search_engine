@@ -1,5 +1,8 @@
 import re
 
+from os.path import exists
+from os import makedirs
+
 
 interesting_markers = ['.I', '.T', '.W', '.A', 'K']
 markers = ['.I', '.T', '.W', '.B', '.A', '.N', '.X', '.K']
@@ -18,6 +21,8 @@ def split():
     storing = False
     temp = ""
     with open("cacm.all") as cacm_file:
+        if not exists("cacm-data/0/"):
+            makedirs("cacm-data/0/")
         for line in cacm_file:
             line_begin = line[0:2]
             if not is_marker(line_begin):
