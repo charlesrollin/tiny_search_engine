@@ -18,6 +18,46 @@ Information Retrieval project for class IS3013AA
 
 ## Usage Instructions
 
+### Build the collection folders
+
+This engine supports 2 collections: `cacm` and `CS276`. In order to limit its size, collections are not included in this repo.
+
+Collection folders must be added at the root of this repo and respect the structure below:
+
+```bash
+.
+|- {collection_name}-data
+|   |-- 0
+|   |   |-- document_0_1
+|   |   |-- document_0_2
+|   |   |...
+|   |-- 1
+|   |   |-- document_1_1
+|   |   |...
+```
+
+Each subfolder `0/`, `1/` etc., will represent a "block", i.e. a subset, of the collection.
+
+#### CACM
+
+The construction of the `cacm-data/` folder is automated. To build it: 
+* get the [CACM collection](http://ir.dcs.gla.ac.uk/resources/test_collections/cacm/)
+* Unzip the downloaded file and copy the `cacm.all` file at the root of the project
+* open a terminal at the root of the project and run: `python3 split_docs.py`
+
+The script will create a single-block collection folder.
+
+#### CS276
+
+The construction of the `cs276-data/` folder is **not** automated. To build it: 
+* open `Collection.url` and download `pa1-data.zip` from the specified url
+* copy the `pa1-data` folder at the root of the project
+* rename it to `cs276-data`
+
+After these steps, you will have a 10-blocks collection folder for CS276.
+
+### Starting the engine
+
 ```bash
 python3 main.py [-h] [-w WEIGHT] [-e] collection
 
